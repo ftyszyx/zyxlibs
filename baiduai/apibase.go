@@ -14,7 +14,7 @@ import (
 
 	"github.com/astaxie/beego/cache"
 	"github.com/astaxie/beego/httplib"
-	"github.com/zyx/shop_server/libs"
+	zyxstr "github.com/ftyszyx/string"
 )
 
 var accessTokenUrl = "https://aip.baidubce.com/oauth/2.0/token"
@@ -205,7 +205,7 @@ func (self *BaiduAiType) isPermission(data *AuthResp) bool {
 	}
 
 	scopelist := strings.Split(data.Scope, " ")
-	getindex := libs.SliceIndex(scopelist, func(item string) bool {
+	getindex := zyxstr.SliceIndex(scopelist, func(item string) bool {
 		return item == self.Scope
 	})
 	if getindex == -1 {
