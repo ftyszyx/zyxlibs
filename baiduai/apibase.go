@@ -9,11 +9,11 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/astaxie/beego"
-	"github.com/astaxie/beego/logs"
+	"github.com/ftyszyx/libs/beego"
+	"github.com/ftyszyx/libs/beego/logs"
 
-	"github.com/astaxie/beego/cache"
-	"github.com/astaxie/beego/httplib"
+	"github.com/ftyszyx/libs/beego/cache"
+	"github.com/ftyszyx/libs/beego/httplib"
 	zyxstr "github.com/ftyszyx/libs/string"
 )
 

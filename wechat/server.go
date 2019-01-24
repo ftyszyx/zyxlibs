@@ -1,10 +1,10 @@
 package wechat
 
 import (
-	"github.com/astaxie/beego"
-	"github.com/astaxie/beego/cache"
-	"github.com/astaxie/beego/context"
-	"github.com/astaxie/beego/logs"
+	"github.com/ftyszyx/libs/beego"
+	"github.com/ftyszyx/libs/beego/cache"
+	"github.com/ftyszyx/libs/beego/context"
+	"github.com/ftyszyx/libs/beego/logs"
 	"github.com/ftyszyx/libs/wechat/js"
 	"github.com/ftyszyx/libs/wechat/message"
 	"github.com/ftyszyx/libs/wechat/oauth"

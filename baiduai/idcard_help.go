@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/astaxie/beego/logs"
+	"github.com/ftyszyx/libs/beego/logs"
 	"github.com/pkg/errors"
 )
 

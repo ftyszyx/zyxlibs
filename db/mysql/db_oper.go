@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/astaxie/beego/logs"
+	"github.com/ftyszyx/libs/beego/logs"
 
 	"github.com/pkg/errors"
 )

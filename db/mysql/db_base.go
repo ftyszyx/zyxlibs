@@ -8,7 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/astaxie/beego/logs"
+	"github.com/ftyszyx/libs/beego/logs"
 )
 
 var curdb DBInfo

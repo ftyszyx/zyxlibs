@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/astaxie/beego/cache"
+	"github.com/ftyszyx/libs/beego/cache"
 )
 
 // Context struct

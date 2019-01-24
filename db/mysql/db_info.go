@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/astaxie/beego/logs"
+	"github.com/ftyszyx/libs/beego/logs"
 )
 
 //DriverType 数据库类型

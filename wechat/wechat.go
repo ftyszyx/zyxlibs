@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/astaxie/beego/cache"
+	"github.com/ftyszyx/libs/beego/cache"
 	"github.com/ftyszyx/libs/wechat/context"
 	"github.com/ftyszyx/libs/wechat/js"
 	"github.com/ftyszyx/libs/wechat/material"

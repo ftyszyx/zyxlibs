@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/astaxie/beego"
+	"github.com/ftyszyx/libs/beego"
 	"github.com/pkg/errors"
 	"github.com/qiniu/api.v7/auth/qbox"
 	"github.com/qiniu/api.v7/storage"

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/astaxie/beego/httplib"
-	"github.com/astaxie/beego/logs"
+	"github.com/ftyszyx/libs/beego/httplib"
+	"github.com/ftyszyx/libs/beego/logs"
 	"github.com/pkg/errors"
 )
 
