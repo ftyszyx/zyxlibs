@@ -14,7 +14,7 @@ import (
 
 	"github.com/astaxie/beego/cache"
 	"github.com/astaxie/beego/httplib"
-	zyxstr "github.com/ftyszyx/string"
+	zyxstr "github.com/ftyszyx/libs/string"
 )
 
 var accessTokenUrl = "https://aip.baidubce.com/oauth/2.0/token"

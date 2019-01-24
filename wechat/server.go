@@ -5,9 +5,9 @@ import (
 	"github.com/astaxie/beego/cache"
 	"github.com/astaxie/beego/context"
 	"github.com/astaxie/beego/logs"
-	"github.com/ftyszyx/wechat/js"
-	"github.com/ftyszyx/wechat/message"
-	"github.com/ftyszyx/wechat/oauth"
+	"github.com/ftyszyx/libs/wechat/js"
+	"github.com/ftyszyx/libs/wechat/message"
+	"github.com/ftyszyx/libs/wechat/oauth"
 )
 
 var Instance *Wechat

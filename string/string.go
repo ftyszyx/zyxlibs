@@ -131,3 +131,12 @@ func ParseTime(timestr string) (error, time.Time) {
 
 	return nil, starttime
 }
+
+func SliceIndex(itemlist []string, callback func(item string) bool) int {
+	for i := 0; i < len(itemlist); i++ {
+		if callback(itemlist[i]) {
+			return i
+		}
+	}
+	return -1
+}

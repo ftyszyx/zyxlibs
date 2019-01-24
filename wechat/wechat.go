@@ -5,15 +5,15 @@ import (
 	"sync"
 
 	"github.com/astaxie/beego/cache"
-	"github.com/ftyszyx/wechat/context"
-	"github.com/ftyszyx/wechat/js"
-	"github.com/ftyszyx/wechat/material"
-	"github.com/ftyszyx/wechat/menu"
-	"github.com/ftyszyx/wechat/oauth"
-	"github.com/ftyszyx/wechat/pay"
-	"github.com/ftyszyx/wechat/server"
-	"github.com/ftyszyx/wechat/template"
-	"github.com/ftyszyx/wechat/user"
+	"github.com/ftyszyx/libs/wechat/context"
+	"github.com/ftyszyx/libs/wechat/js"
+	"github.com/ftyszyx/libs/wechat/material"
+	"github.com/ftyszyx/libs/wechat/menu"
+	"github.com/ftyszyx/libs/wechat/oauth"
+	"github.com/ftyszyx/libs/wechat/pay"
+	"github.com/ftyszyx/libs/wechat/server"
+	"github.com/ftyszyx/libs/wechat/template"
+	"github.com/ftyszyx/libs/wechat/user"
 )
 
 // Wechat struct

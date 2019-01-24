@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ftyszyx/wechat/util"
+	"github.com/ftyszyx/libs/wechat/util"
 )
 
 const (
