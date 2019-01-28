@@ -24,10 +24,9 @@ import (
 	"net/http/fcgi"
 	"os"
 	"path"
-	"time"
 	"strings"
+	"time"
 
-	"github.com/ftyszyx/libs/beego/grace"
 	"github.com/ftyszyx/libs/beego/logs"
 	"github.com/ftyszyx/libs/beego/utils"
 )
@@ -101,7 +100,7 @@ func (app *App) Run(mws ...MiddleWare) {
 	}
 
 	app.Server.Handler = app.Handlers
-	for i:=len(mws)-1;i>=0;i-- {
+	for i := len(mws) - 1; i >= 0; i-- {
 		if mws[i] == nil {
 			continue
 		}
@@ -110,55 +109,6 @@ func (app *App) Run(mws ...MiddleWare) {
 	app.Server.ReadTimeout = time.Duration(BConfig.Listen.ServerTimeOut) * time.Second
 	app.Server.WriteTimeout = time.Duration(BConfig.Listen.ServerTimeOut) * time.Second
 	app.Server.ErrorLog = logs.GetLogger("HTTP")
-
-	// run graceful mode
-	if BConfig.Listen.Graceful {
-		httpsAddr := BConfig.Listen.HTTPSAddr
-		app.Server.Addr = httpsAddr
-		if BConfig.Listen.EnableHTTPS || BConfig.Listen.EnableMutualHTTPS {
-			go func() {
-				time.Sleep(20 * time.Microsecond)
-				if BConfig.Listen.HTTPSPort != 0 {
-					httpsAddr = fmt.Sprintf("%s:%d", BConfig.Listen.HTTPSAddr, BConfig.Listen.HTTPSPort)
-					app.Server.Addr = httpsAddr
-				}
-				server := grace.NewServer(httpsAddr, app.Handlers)
-				server.Server.ReadTimeout = app.Server.ReadTimeout
-				server.Server.WriteTimeout = app.Server.WriteTimeout
-				if BConfig.Listen.EnableMutualHTTPS {
-
-					if err := server.ListenAndServeMutualTLS(BConfig.Listen.HTTPSCertFile, BConfig.Listen.HTTPSKeyFile, BConfig.Listen.TrustCaFile); err != nil {
-						logs.Critical("ListenAndServeTLS: ", err, fmt.Sprintf("%d", os.Getpid()))
-						time.Sleep(100 * time.Microsecond)
-						endRunning <- true
-					}
-				} else {
-					if err := server.ListenAndServeTLS(BConfig.Listen.HTTPSCertFile, BConfig.Listen.HTTPSKeyFile); err != nil {
-						logs.Critical("ListenAndServeTLS: ", err, fmt.Sprintf("%d", os.Getpid()))
-						time.Sleep(100 * time.Microsecond)
-						endRunning <- true
-					}
-				}
-			}()
-		}
-		if BConfig.Listen.EnableHTTP {
-			go func() {
-				server := grace.NewServer(addr, app.Handlers)
-				server.Server.ReadTimeout = app.Server.ReadTimeout
-				server.Server.WriteTimeout = app.Server.WriteTimeout
-				if BConfig.Listen.ListenTCP4 {
-					server.Network = "tcp4"
-				}
-				if err := server.ListenAndServe(); err != nil {
-					logs.Critical("ListenAndServe: ", err, fmt.Sprintf("%d", os.Getpid()))
-					time.Sleep(100 * time.Microsecond)
-					endRunning <- true
-				}
-			}()
-		}
-		<-endRunning
-		return
-	}
 
 	// run normal mode
 	if BConfig.Listen.EnableHTTPS || BConfig.Listen.EnableMutualHTTPS {

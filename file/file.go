@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -126,8 +127,12 @@ func CreateIfNotExist(path string) {
 }
 
 func MakePath(path string) {
-	if FileExist(path) == false {
-		os.Mkdir(path, 0777)
+	absConfigPath, err := filepath.Abs(path)
+	if err != nil {
+		panic(err.Error())
+	}
+	if FileExist(absConfigPath) == false {
+		os.Mkdir(absConfigPath, 0777)
 	}
 }
 
