@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"time"
 
+	o "github.com/go-gl/gl"
 	"github.com/pkg/errors"
 )
 
@@ -81,7 +82,15 @@ func ReadValues(container interface{}, dbexe DBSeterIO, needCols []string) (int6
 	case *ParamsList:
 		typ = 3
 	default:
-		panic(errors.Errorf("<RawSeter> unsupport read values type `%T`", container))
+		type=4
+		vl := reflect.ValueOf(container)
+		id := reflect.Indirect(vl)
+		if vl.Kind() != reflect.Ptr || id.Kind() != reflect.Struct {
+			panic(fmt.Errorf("<RawSeter> RowsTo unsupport type `%T` need ptr struct", container))
+		}
+
+		ind = &id
+		//panic(errors.Errorf("<RawSeter> unsupport read values type `%T`", container))
 	}
 
 	//args := getFlatParams(nil, self.args, self.oper.info.TZ)
@@ -169,6 +178,10 @@ func ReadValues(container interface{}, dbexe DBSeterIO, needCols []string) (int6
 					list = append(list, nil)
 				}
 			}
+		default:
+			if id := ind.FieldByName(camelString(key)); id.IsValid() {
+				self.setFieldValue(id, reflect.ValueOf(refs[valueIndex]).Elem().Interface())
+			}
 		}
 
 		cnt++
@@ -204,4 +217,120 @@ func (self *DBSeter) ValuesFlat(container *ParamsList, cols ...string) (int64, e
 // return prepared raw statement for used in times.
 func (self *DBSeter) Prepare() (DBPreparerIO, error) {
 	return NewDBPreparer(self)
+}
+
+func (d *DBSeter) TimeFromDB(t *time.Time, tz *time.Location) {
+	*t = t.In(tz)
+}
+
+// set field value to row container
+func (self *DBSeter) setFieldValue(ind reflect.Value, value interface{}) {
+	switch ind.Kind() {
+	case reflect.Bool:
+		if value == nil {
+			ind.SetBool(false)
+		} else if v, ok := value.(bool); ok {
+			ind.SetBool(v)
+		} else {
+			v, _ := StrTo(ToStr(value)).Bool()
+			ind.SetBool(v)
+		}
+
+	case reflect.String:
+		if value == nil {
+			ind.SetString("")
+		} else {
+			ind.SetString(ToStr(value))
+		}
+
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		if value == nil {
+			ind.SetInt(0)
+		} else {
+			val := reflect.ValueOf(value)
+			switch val.Kind() {
+			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+				ind.SetInt(val.Int())
+			case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+				ind.SetInt(int64(val.Uint()))
+			default:
+				v, _ := StrTo(ToStr(value)).Int64()
+				ind.SetInt(v)
+			}
+		}
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		if value == nil {
+			ind.SetUint(0)
+		} else {
+			val := reflect.ValueOf(value)
+			switch val.Kind() {
+			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+				ind.SetUint(uint64(val.Int()))
+			case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+				ind.SetUint(val.Uint())
+			default:
+				v, _ := StrTo(ToStr(value)).Uint64()
+				ind.SetUint(v)
+			}
+		}
+	case reflect.Float64, reflect.Float32:
+		if value == nil {
+			ind.SetFloat(0)
+		} else {
+			val := reflect.ValueOf(value)
+			switch val.Kind() {
+			case reflect.Float64:
+				ind.SetFloat(val.Float())
+			default:
+				v, _ := StrTo(ToStr(value)).Float64()
+				ind.SetFloat(v)
+			}
+		}
+
+	case reflect.Struct:
+		if value == nil {
+			ind.Set(reflect.Zero(ind.Type()))
+			return
+		}
+		switch ind.Interface().(type) {
+		case time.Time:
+			var str string
+			switch d := value.(type) {
+			case time.Time:
+				self.TimeFromDB(&d, self.oper.info.TZ)
+				d = t.In(tz)
+				ind.Set(reflect.ValueOf(d))
+			case []byte:
+				str = string(d)
+			case string:
+				str = d
+			}
+			if str != "" {
+				if len(str) >= 19 {
+					str = str[:19]
+					t, err := time.ParseInLocation(formatDateTime, str,self.oper.info.TZ)
+					if err == nil {
+						t = t.In(DefaultTimeLoc)
+						ind.Set(reflect.ValueOf(t))
+					}
+				} else if len(str) >= 10 {
+					str = str[:10]
+					t, err := time.ParseInLocation(formatDate, str, DefaultTimeLoc)
+					if err == nil {
+						ind.Set(reflect.ValueOf(t))
+					}
+				}
+			}
+		case sql.NullString, sql.NullInt64, sql.NullFloat64, sql.NullBool:
+			indi := reflect.New(ind.Type()).Interface()
+			sc, ok := indi.(sql.Scanner)
+			if !ok {
+				return
+			}
+			err := sc.Scan(value)
+			if err == nil {
+				ind.Set(reflect.Indirect(reflect.ValueOf(sc)))
+			}
+		}
+	}
 }
