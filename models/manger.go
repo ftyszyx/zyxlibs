@@ -12,7 +12,7 @@ func GetAllModel() map[string]ModelInterface {
 	return allModels
 }
 
-func InitAllModel() {
+func ResetAllModel() {
 	allModels = make(map[string]ModelInterface)
 }
 
