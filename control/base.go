@@ -79,28 +79,39 @@ func (self *BaseController) SetMethod(method string) {
 
 //json 返回
 func (self *BaseController) AjaxReturn(code int, msg interface{}, data interface{}) {
-	self.dboper.RollbackIfNotNull()
+	if self.dboper != nil {
+		self.dboper.RollbackIfNotNull()
+	}
+
 	utils.AjaxReturn(&self.Controller, code, msg, data)
 }
 
 func (self *BaseController) AjaxReturnError(err error) {
-	self.dboper.RollbackIfNotNull()
+	if self.dboper != nil {
+		self.dboper.RollbackIfNotNull()
+	}
 	logs.Error("err:%+v", err)
 	utils.AjaxReturn(&self.Controller, utils.ErrorCode, err.Error(), nil)
 }
 
 func (self *BaseController) AjaxReturnErrorMsg(msg interface{}) {
-	self.dboper.RollbackIfNotNull()
+	if self.dboper != nil {
+		self.dboper.RollbackIfNotNull()
+	}
 	utils.AjaxReturn(&self.Controller, utils.ErrorCode, msg, nil)
 }
 
 func (self *BaseController) AjaxReturnSuccess(msg interface{}, data interface{}) {
-	self.dboper.RollbackIfNotNull()
+	if self.dboper != nil {
+		self.dboper.RollbackIfNotNull()
+	}
 	utils.AjaxReturn(&self.Controller, utils.SuccessCode, msg, data)
 }
 
 func (self *BaseController) AjaxReturnSuccessNull() {
-	self.dboper.RollbackIfNotNull()
+	if self.dboper != nil {
+		self.dboper.RollbackIfNotNull()
+	}
 	utils.AjaxReturn(&self.Controller, utils.SuccessCode, "", nil)
 }
 

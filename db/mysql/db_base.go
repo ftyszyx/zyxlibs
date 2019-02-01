@@ -16,6 +16,16 @@ var curdb DBInfo
 type Params map[string]interface{}
 type ParamsList []interface{}
 
+//新建一个操作
+func NewOper() DBOperIO {
+	o := new(DBOper)
+	err := o.Using("default")
+	if err != nil {
+		panic(err)
+	}
+	return o
+}
+
 //一些常量
 var (
 	Debug            = true //配置是否打日志
@@ -114,16 +124,6 @@ func GetDB(names ...string) (*DBInfo, error) {
 		return al, nil
 	}
 	return nil, errors.Errorf("DataBase of alias name `%s` not found", name)
-}
-
-//新建一个操作
-func NewOper() DBOperIO {
-	o := new(DBOper)
-	err := o.Using("default")
-	if err != nil {
-		panic(err)
-	}
-	return o
 }
 
 func LogQueies(info *DBInfo, operaton string, query string, t time.Time, err error, args ...interface{}) {

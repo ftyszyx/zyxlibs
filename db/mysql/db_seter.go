@@ -3,10 +3,10 @@ package mysql
 //保存的参数信息
 import (
 	"database/sql"
+	"fmt"
 	"reflect"
 	"time"
 
-	o "github.com/go-gl/gl"
 	"github.com/pkg/errors"
 )
 
@@ -28,6 +28,8 @@ type DBSeterIO interface {
 	// query data to []interface
 	// see QuerySeter's ValuesFlat
 	ValuesFlat(container *ParamsList, cols ...string) (int64, error)
+
+	setFieldValue(ind reflect.Value, value interface{})
 }
 
 //数据库的一项操作
@@ -82,14 +84,13 @@ func ReadValues(container interface{}, dbexe DBSeterIO, needCols []string) (int6
 	case *ParamsList:
 		typ = 3
 	default:
-		type=4
+		typ = 4
 		vl := reflect.ValueOf(container)
-		id := reflect.Indirect(vl)
-		if vl.Kind() != reflect.Ptr || id.Kind() != reflect.Struct {
+
+		if vl.Kind() != reflect.Ptr || vl.Kind() != reflect.Struct {
 			panic(fmt.Errorf("<RawSeter> RowsTo unsupport type `%T` need ptr struct", container))
 		}
 
-		ind = &id
 		//panic(errors.Errorf("<RawSeter> unsupport read values type `%T`", container))
 	}
 
@@ -179,8 +180,17 @@ func ReadValues(container interface{}, dbexe DBSeterIO, needCols []string) (int6
 				}
 			}
 		default:
-			if id := ind.FieldByName(camelString(key)); id.IsValid() {
-				self.setFieldValue(id, reflect.ValueOf(refs[valueIndex]).Elem().Interface())
+			vl := reflect.ValueOf(container)
+			ind := reflect.Indirect(vl) //对应
+			for _, i := range indexs {
+				ref := refs[i]
+				value := reflect.Indirect(reflect.ValueOf(ref)).Interface().(sql.NullString)
+				if value.Valid {
+
+					if id := ind.FieldByName(camelString(cols[i])); id.IsValid() {
+						dbexe.setFieldValue(id, reflect.ValueOf(ref).Elem().Interface())
+					}
+				}
 			}
 		}
 
@@ -298,7 +308,7 @@ func (self *DBSeter) setFieldValue(ind reflect.Value, value interface{}) {
 			switch d := value.(type) {
 			case time.Time:
 				self.TimeFromDB(&d, self.oper.info.TZ)
-				d = t.In(tz)
+
 				ind.Set(reflect.ValueOf(d))
 			case []byte:
 				str = string(d)
@@ -308,7 +318,7 @@ func (self *DBSeter) setFieldValue(ind reflect.Value, value interface{}) {
 			if str != "" {
 				if len(str) >= 19 {
 					str = str[:19]
-					t, err := time.ParseInLocation(formatDateTime, str,self.oper.info.TZ)
+					t, err := time.ParseInLocation(formatDateTime, str, self.oper.info.TZ)
 					if err == nil {
 						t = t.In(DefaultTimeLoc)
 						ind.Set(reflect.ValueOf(t))

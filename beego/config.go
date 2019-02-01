@@ -129,29 +129,31 @@ var (
 
 func init() {
 	BConfig = newBConfig()
-	var err error
-	if AppPath, err = filepath.Abs(filepath.Dir(os.Args[0])); err != nil {
-		panic(err)
-	}
-	workPath, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
-	var filename = "app.conf"
-	if os.Getenv("BEEGO_MODE") != "" {
-		filename = os.Getenv("BEEGO_MODE") + ".app.conf"
-	}
-	appConfigPath = filepath.Join(workPath, "conf", filename)
-	if !utils.FileExists(appConfigPath) {
-		appConfigPath = filepath.Join(AppPath, "conf", filename)
-		if !utils.FileExists(appConfigPath) {
-			AppConfig = &beegoAppConfig{innerConfig: config.NewFakeConfig()}
-			return
+	/*
+		var err error
+		if AppPath, err = filepath.Abs(filepath.Dir(os.Args[0])); err != nil {
+			panic(err)
 		}
-	}
-	if err = parseConfig(appConfigPath); err != nil {
-		panic(err)
-	}
+		workPath, err := os.Getwd()
+		if err != nil {
+			panic(err)
+		}
+		var filename = "app.conf"
+		if os.Getenv("BEEGO_MODE") != "" {
+			filename = os.Getenv("BEEGO_MODE") + ".app.conf"
+		}
+		appConfigPath = filepath.Join(workPath, "conf", filename)
+		if !utils.FileExists(appConfigPath) {
+			appConfigPath = filepath.Join(AppPath, "conf", filename)
+			if !utils.FileExists(appConfigPath) {
+				AppConfig = &beegoAppConfig{innerConfig: config.NewFakeConfig()}
+				return
+			}
+		}
+		if err = parseConfig(appConfigPath); err != nil {
+			panic(err)
+		}
+	*/
 }
 
 func recoverPanic(ctx *context.Context) {
