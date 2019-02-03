@@ -48,6 +48,9 @@ func (self *DBOper) Raw(query string, args ...interface{}) *DBSeter {
 
 	return newDBSeter(self, query, args)
 }
+func (self *DBOper) GetDB() dbQuerier {
+	return self.db
+}
 
 func (self *DBOper) Using(name string) error {
 	if self.isTx {

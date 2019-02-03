@@ -29,6 +29,8 @@ type DBSeterIO interface {
 	// see QuerySeter's ValuesFlat
 	ValuesFlat(container *ParamsList, cols ...string) (int64, error)
 
+	ValueStruct(container *[]interface{}, cols ...string) (int64, error)
+
 	setFieldValue(ind reflect.Value, value interface{})
 }
 
@@ -211,6 +213,10 @@ func ReadValues(container interface{}, dbexe DBSeterIO, needCols []string) (int6
 
 // query data to []map[string]interface
 func (self *DBSeter) Values(container *[]Params, cols ...string) (int64, error) {
+	return ReadValues(container, self, cols)
+}
+
+func (self *DBSeter) ValueStruct(container *[]interface{}, cols ...string) (int64, error) {
 	return ReadValues(container, self, cols)
 }
 

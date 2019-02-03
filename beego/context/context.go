@@ -53,7 +53,54 @@ type Context struct {
 	Output         *BeegoOutput
 	Request        *http.Request
 	ResponseWriter *Response
+	Keys           map[string]interface{}
 	_xsrfToken     string
+}
+
+// Context 接口
+func (c *Context) Deadline() (deadline time.Time, ok bool) {
+	return
+}
+
+func (c *Context) Done() <-chan struct{} {
+	return nil
+}
+
+func (c *Context) Err() error {
+	return nil
+}
+
+func (c *Context) Value(key interface{}) interface{} {
+
+	if keyAsString, ok := key.(string); ok {
+		val, _ := c.Get(keyAsString)
+		return val
+	}
+	return nil
+}
+
+func (c *Context) Set(key string, value interface{}) {
+	if c.Keys == nil {
+		c.Keys = make(map[string]interface{})
+	}
+	c.Keys[key] = value
+}
+
+// Get returns the value for the given key, ie: (value, true).
+// If the value does not exists it returns (nil, false)
+func (c *Context) Get(key string) (value interface{}, exists bool) {
+	if c.Keys != nil {
+		value, exists = c.Keys[key]
+	}
+	return
+}
+
+// Returns the value for the given key if it exists, otherwise it panics.
+func (c *Context) MustGet(key string) interface{} {
+	if value, exists := c.Get(key); exists {
+		return value
+	}
+	panic("Key \"" + key + "\" does not exist")
 }
 
 // Reset init Context, BeegoInput and BeegoOutput
