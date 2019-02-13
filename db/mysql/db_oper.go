@@ -23,6 +23,7 @@ type DBOperIO interface {
 	Commit() error
 	RollbackIfNotNull() error
 	Rollback() error
+	GetDB() dbQuerier
 }
 
 //底层数据库的接口
