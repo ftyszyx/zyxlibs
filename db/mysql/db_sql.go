@@ -3,6 +3,7 @@ package mysql
 import (
 	"bytes"
 	"fmt"
+	"reflect"
 	"strings"
 )
 
@@ -390,4 +391,18 @@ func SqlGetArrInfo(arr []interface{}) string {
 
 func SqlEscap(src string) string {
 	return strings.Replace(src, "'", "\\'", -1)
+}
+
+func Struct2SqlMap(obj interface{}) map[string]interface{} {
+	t := reflect.TypeOf(obj)
+	v := reflect.ValueOf(obj)
+
+	var out = make(map[string]interface{})
+	for i := 0; i < t.NumField(); i++ {
+		fi := t.Field(i)
+		if tagv := fi.Tag.Get("meddler"); tagv != "" && tagv != "-" {
+			out[tagv] = v.Field(i).Interface()
+		}
+	}
+	return out
 }

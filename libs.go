@@ -1,51 +1,19 @@
 package libs
 
 import (
-	"fmt"
 	"reflect"
 	"strings"
 )
 
-func StructToMapCmp(in interface{}, tag string, changemap map[string]interface{}) (map[string]interface{}, error) {
-	out := make(map[string]interface{})
+func Struct2Map(obj interface{}) map[string]interface{} {
+	t := reflect.TypeOf(obj)
+	v := reflect.ValueOf(obj)
 
-	v := reflect.ValueOf(in)
-	if v.Kind() == reflect.Ptr {
-		v = v.Elem()
+	var data = make(map[string]interface{})
+	for i := 0; i < t.NumField(); i++ {
+		data[strings.ToLower(t.Field(i).Name)] = v.Field(i).Interface()
 	}
-
-	// we only accept structs
-	if v.Kind() != reflect.Struct {
-		return nil, fmt.Errorf("ToMap only accepts structs; got %T", v)
-	}
-
-	typ := v.Type()
-	for i := 0; i < v.NumField(); i++ {
-		// gets us a StructField
-		fi := typ.Field(i)
-		if tag == "" {
-			out[fi.Name] = v.Field(i).Interface()
-		} else {
-			if tagv := fi.Tag.Get(tag); tagv != "" {
-				// set key of map to value in struct field
-				if tag == "edit" && changemap != nil {
-					_, have := changemap[tagv]
-					if have {
-						out[tagv] = v.Field(i).Interface()
-					}
-				} else {
-					out[tagv] = v.Field(i).Interface()
-				}
-
-			}
-		}
-
-	}
-	return out, nil
-}
-
-func StructToMap(in interface{}, tag string) (map[string]interface{}, error) {
-	return StructToMapCmp(in, tag, nil)
+	return data
 }
 
 //按照结构体清除map无用字段,只有在结构体中有的字段，才会放进去
