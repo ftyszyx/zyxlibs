@@ -101,6 +101,13 @@ func (self *BaseController) AjaxReturnErrorMsg(msg interface{}) {
 	utils.AjaxReturn(&self.Controller, utils.ErrorCode, msg, nil)
 }
 
+func (self *BaseController) AjaxReturnSuccessData(data interface{}) {
+	if self.dboper != nil {
+		self.dboper.RollbackIfNotNull()
+	}
+	utils.AjaxReturn(&self.Controller, utils.SuccessCode, "", data)
+}
+
 func (self *BaseController) AjaxReturnSuccess(msg interface{}, data interface{}) {
 	if self.dboper != nil {
 		self.dboper.RollbackIfNotNull()

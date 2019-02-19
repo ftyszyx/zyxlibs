@@ -393,6 +393,7 @@ func SqlEscap(src string) string {
 	return strings.Replace(src, "'", "\\'", -1)
 }
 
+// meddler:"build_started,zeroisnull"
 func Struct2SqlMap(obj interface{}) map[string]interface{} {
 	t := reflect.TypeOf(obj)
 	v := reflect.ValueOf(obj)
@@ -401,7 +402,20 @@ func Struct2SqlMap(obj interface{}) map[string]interface{} {
 	for i := 0; i < t.NumField(); i++ {
 		fi := t.Field(i)
 		if tagv := fi.Tag.Get("meddler"); tagv != "" && tagv != "-" {
-			out[tagv] = v.Field(i).Interface()
+			keyname := strings.Split(tagv, ",")[0]
+			out[keyname] = v.Field(i).Interface()
+		}
+	}
+	return out
+}
+
+func GetFieldByStruct(t reflect.Type) []string {
+	var out = make([]string, t.NumField())
+	for i := 0; i < t.NumField(); i++ {
+		fi := t.Field(i)
+		if tagv := fi.Tag.Get("meddler"); tagv != "" && tagv != "-" {
+			keyname := strings.Split(tagv, ",")[0]
+			out[i] = "`" + keyname + "`"
 		}
 	}
 	return out
