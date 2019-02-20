@@ -48,7 +48,8 @@ type SqlType interface {
 	Join(string) SqlType
 	GetJoinStr() string
 	GetAlias() string
-
+	GetArgs() []string
+	NeedArgs()
 	NeedJointable(tablename string) bool
 	HaveField(fieldName string) bool
 }
@@ -62,7 +63,14 @@ type SqlBuild struct {
 	limit     []int                  //limit  [3,100]  start num
 	andOr     bool                   // true->and false ->or
 	order     map[string]interface{} //排序
+	arglist   []string               //参数列表
+	needArgs  bool                   //是否获取参数列表
 	joinStr   string                 //
+}
+
+func NewSqlBuild() SqlType {
+	o := new(SqlBuild)
+	return o
 }
 
 func (self *SqlBuild) GetJoinStr() string {
@@ -71,6 +79,14 @@ func (self *SqlBuild) GetJoinStr() string {
 
 func (self *SqlBuild) GetAlias() string {
 	return self.alias
+}
+
+func (self *SqlBuild) GetArgs() []string {
+	return self.arglist
+}
+
+func (self *SqlBuild) NeedArgs() {
+	self.needArgs = true
 }
 
 //是否要内联table
@@ -126,8 +142,8 @@ func (self *SqlBuild) getSql() string {
 		connectstr = "OR"
 	}
 	if self.where != nil {
-
-		whereStr = strings.TrimSpace(SqlGetSearch(self.where, connectstr))
+		whereStr, self.arglist = SqlGetSearch(self.where, connectstr, self.needArgs)
+		whereStr = strings.TrimSpace(whereStr)
 		if whereStr != "" {
 			whereStr = "where " + whereStr
 		}
@@ -282,8 +298,10 @@ func SqlGetString(value interface{}) string {
 	}
 	//return ""
 }
-func SqlGetSearch(search map[string]interface{}, andstr string) string {
+
+func SqlGetSearch(search map[string]interface{}, andstr string, needArgs bool) (string, []string) {
 	var buffer bytes.Buffer
+	var arglist []string
 	for key, value := range search {
 		buffer.WriteString(" ")
 		if valuetemp, ok := value.([]interface{}); ok {
@@ -293,7 +311,13 @@ func SqlGetSearch(search map[string]interface{}, andstr string) string {
 				buffer.WriteString(" ")
 				buffer.WriteString(SqlEscap(valuetemp[0].(string)))
 				buffer.WriteString(" ")
-				buffer.WriteString(SqlGetString(valuetemp[1]))
+				if needArgs {
+					buffer.WriteString("?")
+					arglist = append(arglist, valuetemp[1].(string))
+				} else {
+					buffer.WriteString(SqlGetString(valuetemp[1]))
+				}
+
 			} else {
 				//( `pay_time` > 1525276800 and `pay_time` < 1528214400 )
 
@@ -309,7 +333,14 @@ func SqlGetSearch(search map[string]interface{}, andstr string) string {
 						buffertemp.WriteString(" ")
 						buffertemp.WriteString(SqlEscap(condarr[0].(string)))
 						buffertemp.WriteString(" ")
-						buffertemp.WriteString(SqlGetString(condarr[1]))
+
+						if needArgs {
+							buffer.WriteString("?")
+							arglist = append(arglist, condarr[1].(string))
+						} else {
+							buffertemp.WriteString(SqlGetString(condarr[1]))
+						}
+
 						condarrstr = append(condarrstr, buffertemp.String())
 					} else {
 						condconect = strtemp
@@ -323,12 +354,19 @@ func SqlGetSearch(search map[string]interface{}, andstr string) string {
 		} else {
 			buffer.WriteString(SqlGetKey(key))
 			buffer.WriteString("=")
-			buffer.WriteString(SqlGetString(value))
+
+			if needArgs {
+				buffer.WriteString("?")
+				arglist = append(arglist, value.(string))
+			} else {
+				buffer.WriteString(SqlGetString(value))
+			}
+
 		}
 		buffer.WriteString(" ")
 		buffer.WriteString(andstr)
 	}
-	return strings.Trim(buffer.String(), andstr)
+	return strings.Trim(buffer.String(), andstr), arglist
 }
 
 func SqlGetKey(key string) string {
