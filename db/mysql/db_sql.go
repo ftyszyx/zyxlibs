@@ -39,16 +39,18 @@ type SqlType interface {
 	Find() string
 	Count() string
 	Name(string) SqlType
+	GetName() string
 	Where(data map[string]interface{}) SqlType
 	WhereOr(data map[string]interface{}) SqlType
 	Field(map[string]string) SqlType
 	Alias(string) SqlType
 	Order(map[string]interface{}) SqlType
+	GetOrder() map[string]interface{}
 	Limit([]int) SqlType
 	Join(string) SqlType
 	GetJoinStr() string
 	GetAlias() string
-	GetArgs() []string
+	GetArgs() []interface{}
 	NeedArgs()
 	NeedJointable(tablename string) bool
 	HaveField(fieldName string) bool
@@ -63,7 +65,7 @@ type SqlBuild struct {
 	limit     []int                  //limit  [3,100]  start num
 	andOr     bool                   // true->and false ->or
 	order     map[string]interface{} //排序
-	arglist   []string               //参数列表
+	arglist   []interface{}          //参数列表
 	needArgs  bool                   //是否获取参数列表
 	joinStr   string                 //
 }
@@ -81,7 +83,7 @@ func (self *SqlBuild) GetAlias() string {
 	return self.alias
 }
 
-func (self *SqlBuild) GetArgs() []string {
+func (self *SqlBuild) GetArgs() []interface{} {
 	return self.arglist
 }
 
@@ -234,6 +236,14 @@ func (self *SqlBuild) Name(name string) SqlType {
 	return self
 }
 
+func (self *SqlBuild) GetName() string {
+	return self.TableName
+}
+
+func (self *SqlBuild) GetOrder() map[string]interface{} {
+	return self.order
+}
+
 func (self *SqlBuild) Order(data map[string]interface{}) SqlType {
 	self.order = data
 	return self
@@ -299,9 +309,9 @@ func SqlGetString(value interface{}) string {
 	//return ""
 }
 
-func SqlGetSearch(search map[string]interface{}, andstr string, needArgs bool) (string, []string) {
+func SqlGetSearch(search map[string]interface{}, andstr string, needArgs bool) (string, []interface{}) {
 	var buffer bytes.Buffer
-	var arglist []string
+	var arglist []interface{}
 	for key, value := range search {
 		buffer.WriteString(" ")
 		if valuetemp, ok := value.([]interface{}); ok {
@@ -313,7 +323,7 @@ func SqlGetSearch(search map[string]interface{}, andstr string, needArgs bool) (
 				buffer.WriteString(" ")
 				if needArgs {
 					buffer.WriteString("?")
-					arglist = append(arglist, valuetemp[1].(string))
+					arglist = append(arglist, valuetemp[1])
 				} else {
 					buffer.WriteString(SqlGetString(valuetemp[1]))
 				}
@@ -336,7 +346,7 @@ func SqlGetSearch(search map[string]interface{}, andstr string, needArgs bool) (
 
 						if needArgs {
 							buffer.WriteString("?")
-							arglist = append(arglist, condarr[1].(string))
+							arglist = append(arglist, condarr[1])
 						} else {
 							buffertemp.WriteString(SqlGetString(condarr[1]))
 						}
@@ -357,7 +367,7 @@ func SqlGetSearch(search map[string]interface{}, andstr string, needArgs bool) (
 
 			if needArgs {
 				buffer.WriteString("?")
-				arglist = append(arglist, value.(string))
+				arglist = append(arglist, value)
 			} else {
 				buffer.WriteString(SqlGetString(value))
 			}
@@ -432,16 +442,17 @@ func SqlEscap(src string) string {
 }
 
 // meddler:"build_started,zeroisnull"
-func Struct2SqlMap(obj interface{}) map[string]interface{} {
+func Struct2SqlMap(obj interface{}) map[string]string {
 	t := reflect.TypeOf(obj)
 	v := reflect.ValueOf(obj)
 
-	var out = make(map[string]interface{})
+	var out = make(map[string]string)
 	for i := 0; i < t.NumField(); i++ {
 		fi := t.Field(i)
 		if tagv := fi.Tag.Get("meddler"); tagv != "" && tagv != "-" {
 			keyname := strings.Split(tagv, ",")[0]
-			out[keyname] = v.Field(i).Interface()
+			out[keyname], _ = v.Field(i).Interface().(string)
+
 		}
 	}
 	return out
