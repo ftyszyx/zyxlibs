@@ -4,6 +4,9 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"time"
+
+	"github.com/pkg/errors"
 )
 
 // DB is a generic database interface, matching both *sql.Db and *sql.Tx
@@ -15,7 +18,7 @@ type DB interface {
 
 // Load loads a record using a query for the primary key field.
 // Returns sql.ErrNoRows if not found.
-func (d *Database) Load(db DB, table string, dst interface{}, pk interface{}) error {
+func (d *Database) Load(db DB, table string, dst interface{}, pk int64) error {
 	columns, err := d.ColumnsQuoted(dst, true)
 	if err != nil {
 		return err
@@ -27,15 +30,16 @@ func (d *Database) Load(db DB, table string, dst interface{}, pk interface{}) er
 		return err
 	}
 	if pkName == "" {
-		return fmt.Errorf("meddler.Load: no primary key field found")
+		return errors.Errorf("meddler.Load: no primary key field found")
 	}
 
 	// run the query
 	q := fmt.Sprintf("SELECT %s FROM %s WHERE %s = %s", columns, d.quoted(table), d.quoted(pkName), d.Placeholder)
-
+	begintime := time.Now()
 	rows, err := db.Query(q, pk)
+	LogQueies("db.Query", q, begintime, err, pk)
 	if err != nil {
-		return fmt.Errorf("meddler.Load: DB error in Query: %v", err)
+		return errors.Errorf("meddler.Load: DB error in Query: %v", err)
 	}
 
 	// scan the row
@@ -43,8 +47,32 @@ func (d *Database) Load(db DB, table string, dst interface{}, pk interface{}) er
 }
 
 // Load using the Default Database type
-func Load(db DB, table string, dst interface{}, pk interface{}) error {
+func Load(db DB, table string, dst interface{}, pk int64) error {
 	return Default.Load(db, table, dst, pk)
+}
+
+func (d *Database) LoadByKey(db DB, table string, dst interface{}, key string, value interface{}) error {
+	columns, err := d.ColumnsQuoted(dst, true)
+	if err != nil {
+		return err
+	}
+
+	// run the query
+	q := fmt.Sprintf("SELECT %s FROM %s WHERE %s = %s limit 1", columns, d.quoted(table), key, d.Placeholder)
+	begintime := time.Now()
+
+	rows, err := db.Query(q, value)
+	LogQueies("db.Query", q, begintime, err, value)
+	if err != nil {
+		return errors.Errorf("meddler.Load: DB error in Query: %v", err)
+	}
+
+	// scan the row
+	return d.ScanRow(rows, dst)
+}
+
+func LoadByKey(db DB, table string, dst interface{}, key string, value interface{}) error {
+	return Default.LoadByKey(db, table, dst, key, value)
 }
 
 // Insert performs an INSERT query for the given record.
@@ -57,7 +85,7 @@ func (d *Database) Insert(db DB, table string, src interface{}) error {
 		return err
 	}
 	if pkName != "" && pkValue != 0 {
-		return fmt.Errorf("meddler.Insert: primary key must be zero")
+		return errors.Errorf("meddler.Insert: primary key must be zero")
 	}
 
 	// gather the query parts
@@ -79,32 +107,38 @@ func (d *Database) Insert(db DB, table string, src interface{}) error {
 	if d.UseReturningToGetID && pkName != "" {
 		q += " RETURNING " + d.quoted(pkName)
 		var newPk int64
+		begintime := time.Now()
 		err := db.QueryRow(q, values...).Scan(&newPk)
+		LogQueies("db.QueryRow", q, begintime, err, values...)
 		if err != nil {
-			return fmt.Errorf("meddler.Insert: DB error in QueryRow: %v", err)
+			return errors.Errorf("meddler.Insert: DB error in QueryRow: %v", err)
 		}
 		if err = d.SetPrimaryKey(src, newPk); err != nil {
-			return fmt.Errorf("meddler.Insert: Error saving updated pk: %v", err)
+			return errors.Errorf("meddler.Insert: Error saving updated pk: %v", err)
 		}
 	} else if pkName != "" {
+		begintime := time.Now()
 		result, err := db.Exec(q, values...)
+		LogQueies("db.Exec", q, begintime, err, values...)
 		if err != nil {
-			return fmt.Errorf("meddler.Insert: DB error in Exec: %v", err)
+			return errors.Errorf("meddler.Insert: DB error in Exec: %v", err)
 		}
 
 		// save the new primary key
 		newPk, err := result.LastInsertId()
 		if err != nil {
-			return fmt.Errorf("meddler.Insert: DB error getting new primary key value: %v", err)
+			return errors.Errorf("meddler.Insert: DB error getting new primary key value: %v", err)
 		}
 		if err = d.SetPrimaryKey(src, newPk); err != nil {
-			return fmt.Errorf("meddler.Insert: Error saving updated pk: %v", err)
+			return errors.Errorf("meddler.Insert: Error saving updated pk: %v", err)
 		}
 	} else {
 		// no primary key, so no need to lookup new value
+		begintime := time.Now()
 		_, err := db.Exec(q, values...)
+		LogQueies("db.Exec", q, begintime, err, values...)
 		if err != nil {
-			return fmt.Errorf("meddler.Insert: DB error in Exec: %v", err)
+			return errors.Errorf("meddler.Insert: DB error in Exec: %v", err)
 		}
 	}
 
@@ -146,10 +180,10 @@ func (d *Database) Update(db DB, table string, src interface{}) error {
 		return err
 	}
 	if pkName == "" {
-		return fmt.Errorf("meddler.Update: no primary key field")
+		return errors.Errorf("meddler.Update: no primary key field")
 	}
 	if pkValue < 1 {
-		return fmt.Errorf("meddler.Update: primary key must be an integer > 0")
+		return errors.Errorf("meddler.Update: primary key must be an integer > 0")
 	}
 	ph := d.placeholder(len(placeholders) + 1)
 
@@ -159,9 +193,12 @@ func (d *Database) Update(db DB, table string, src interface{}) error {
 		d.quoted(pkName), ph)
 	values = append(values, pkValue)
 
+	begintime := time.Now()
+
 	if _, err := db.Exec(q, values...); err != nil {
-		return fmt.Errorf("meddler.Update: DB error in Exec: %v", err)
+		return errors.Errorf("meddler.Update: DB error in Exec: %v", err)
 	}
+	LogQueies("db.Exec", q, begintime, err, values...)
 
 	return nil
 }
@@ -195,7 +232,9 @@ func Save(db DB, table string, src interface{}) error {
 // result row.
 func (d *Database) QueryRow(db DB, dst interface{}, query string, args ...interface{}) error {
 	// perform the query
+	begintime := time.Now()
 	rows, err := db.Query(query, args...)
+	LogQueies("db.Query", query, begintime, err, args...)
 	if err != nil {
 		return err
 	}
@@ -213,7 +252,9 @@ func QueryRow(db DB, dst interface{}, query string, args ...interface{}) error {
 // all results rows into dst.
 func (d *Database) QueryAll(db DB, dst interface{}, query string, args ...interface{}) error {
 	// perform the query
+	begintime := time.Now()
 	rows, err := db.Query(query, args...)
+	LogQueies("db.Query", query, begintime, err, args...)
 	if err != nil {
 		return err
 	}

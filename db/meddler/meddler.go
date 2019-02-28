@@ -7,7 +7,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strings"
 	"time"
+
+	"github.com/ftyszyx/libs/beego/logs"
+	"github.com/pkg/errors"
 )
 
 // Meddler is the interface for a field meddler. Implementations can be
@@ -86,11 +90,11 @@ func (elt TimeMeddler) PreRead(fieldAddr interface{}) (scanTarget interface{}, e
 		return fieldAddr, nil
 	case **time.Time:
 		if elt.ZeroIsNull {
-			return nil, fmt.Errorf("meddler.TimeMeddler cannot be used on a *time.Time field, only time.Time")
+			return nil, errors.Errorf("meddler.TimeMeddler cannot be used on a *time.Time field, only time.Time")
 		}
 		return fieldAddr, nil
 	default:
-		return nil, fmt.Errorf("meddler.TimeMeddler.PreRead: unknown struct field type: %T", fieldAddr)
+		return nil, errors.Errorf("meddler.TimeMeddler.PreRead: unknown struct field type: %T", fieldAddr)
 	}
 }
 
@@ -120,7 +124,7 @@ func (elt TimeMeddler) PostRead(fieldAddr, scanTarget interface{}) error {
 
 	case **time.Time:
 		if elt.ZeroIsNull {
-			return fmt.Errorf("meddler TimeMeddler cannot be used on a *time.Time field, only time.Time")
+			return errors.Errorf("meddler TimeMeddler cannot be used on a *time.Time field, only time.Time")
 		}
 		src := scanTarget.(**time.Time)
 		if *src == nil {
@@ -136,7 +140,7 @@ func (elt TimeMeddler) PostRead(fieldAddr, scanTarget interface{}) error {
 		return nil
 
 	default:
-		return fmt.Errorf("meddler.TimeMeddler.PostRead: unknown struct field type: %T", fieldAddr)
+		return errors.Errorf("meddler.TimeMeddler.PostRead: unknown struct field type: %T", fieldAddr)
 	}
 }
 
@@ -155,7 +159,7 @@ func (elt TimeMeddler) PreWrite(field interface{}) (saveValue interface{}, err e
 		return tgt.UTC(), nil
 
 	default:
-		return nil, fmt.Errorf("meddler.TimeMeddler.PreWrite: unknown struct field type: %T", field)
+		return nil, errors.Errorf("meddler.TimeMeddler.PreWrite: unknown struct field type: %T", field)
 	}
 }
 
@@ -206,7 +210,7 @@ func (elt ZeroIsNullMeddler) PreWrite(field interface{}) (saveValue interface{},
 			return nil, nil
 		}
 	default:
-		return nil, fmt.Errorf("ZeroIsNullMeddler.PreWrite: unknown struct field type: %T", field)
+		return nil, errors.Errorf("ZeroIsNullMeddler.PreWrite: unknown struct field type: %T", field)
 	}
 
 	return field, nil
@@ -222,7 +226,7 @@ func (zip JSONMeddler) PreRead(fieldAddr interface{}) (scanTarget interface{}, e
 func (zip JSONMeddler) PostRead(fieldAddr, scanTarget interface{}) error {
 	ptr := scanTarget.(*[]byte)
 	if ptr == nil {
-		return fmt.Errorf("JSONMeddler.PostRead: nil pointer")
+		return errors.Errorf("JSONMeddler.PostRead: nil pointer")
 	}
 	raw := *ptr
 
@@ -230,15 +234,15 @@ func (zip JSONMeddler) PostRead(fieldAddr, scanTarget interface{}) error {
 		// un-gzip and decode json
 		gzipReader, err := gzip.NewReader(bytes.NewReader(raw))
 		if err != nil {
-			return fmt.Errorf("Error creating gzip Reader: %v", err)
+			return errors.Errorf("Error creating gzip Reader: %v", err)
 		}
 		defer gzipReader.Close()
 		jsonDecoder := json.NewDecoder(gzipReader)
 		if err := jsonDecoder.Decode(fieldAddr); err != nil {
-			return fmt.Errorf("JSON decoder/gzip error: %v", err)
+			return errors.Errorf("JSON decoder/gzip error: %v", err)
 		}
 		if err := gzipReader.Close(); err != nil {
-			return fmt.Errorf("Closing gzip reader: %v", err)
+			return errors.Errorf("Closing gzip reader: %v", err)
 		}
 
 		return nil
@@ -247,7 +251,7 @@ func (zip JSONMeddler) PostRead(fieldAddr, scanTarget interface{}) error {
 	// decode json
 	jsonDecoder := json.NewDecoder(bytes.NewReader(raw))
 	if err := jsonDecoder.Decode(fieldAddr); err != nil {
-		return fmt.Errorf("JSON decode error: %v", err)
+		return errors.Errorf("JSON decode error: %v", err)
 	}
 
 	return nil
@@ -262,10 +266,10 @@ func (zip JSONMeddler) PreWrite(field interface{}) (saveValue interface{}, err e
 		defer gzipWriter.Close()
 		jsonEncoder := json.NewEncoder(gzipWriter)
 		if err := jsonEncoder.Encode(field); err != nil {
-			return nil, fmt.Errorf("JSON encoding/gzip error: %v", err)
+			return nil, errors.Errorf("JSON encoding/gzip error: %v", err)
 		}
 		if err := gzipWriter.Close(); err != nil {
-			return nil, fmt.Errorf("Closing gzip writer: %v", err)
+			return nil, errors.Errorf("Closing gzip writer: %v", err)
 		}
 
 		return buffer.Bytes(), nil
@@ -274,7 +278,7 @@ func (zip JSONMeddler) PreWrite(field interface{}) (saveValue interface{}, err e
 	// json encode
 	jsonEncoder := json.NewEncoder(buffer)
 	if err := jsonEncoder.Encode(field); err != nil {
-		return nil, fmt.Errorf("JSON encoding error: %v", err)
+		return nil, errors.Errorf("JSON encoding error: %v", err)
 	}
 	return buffer.Bytes(), nil
 }
@@ -289,7 +293,7 @@ func (zip GobMeddler) PreRead(fieldAddr interface{}) (scanTarget interface{}, er
 func (zip GobMeddler) PostRead(fieldAddr, scanTarget interface{}) error {
 	ptr := scanTarget.(*[]byte)
 	if ptr == nil {
-		return fmt.Errorf("GobMeddler.PostRead: nil pointer")
+		return errors.Errorf("GobMeddler.PostRead: nil pointer")
 	}
 	raw := *ptr
 
@@ -297,15 +301,15 @@ func (zip GobMeddler) PostRead(fieldAddr, scanTarget interface{}) error {
 		// un-gzip and decode gob
 		gzipReader, err := gzip.NewReader(bytes.NewReader(raw))
 		if err != nil {
-			return fmt.Errorf("Error creating gzip Reader: %v", err)
+			return errors.Errorf("Error creating gzip Reader: %v", err)
 		}
 		defer gzipReader.Close()
 		gobDecoder := gob.NewDecoder(gzipReader)
 		if err := gobDecoder.Decode(fieldAddr); err != nil {
-			return fmt.Errorf("Gob decoder/gzip error: %v", err)
+			return errors.Errorf("Gob decoder/gzip error: %v", err)
 		}
 		if err := gzipReader.Close(); err != nil {
-			return fmt.Errorf("Closing gzip reader: %v", err)
+			return errors.Errorf("Closing gzip reader: %v", err)
 		}
 
 		return nil
@@ -314,7 +318,7 @@ func (zip GobMeddler) PostRead(fieldAddr, scanTarget interface{}) error {
 	// decode gob
 	gobDecoder := gob.NewDecoder(bytes.NewReader(raw))
 	if err := gobDecoder.Decode(fieldAddr); err != nil {
-		return fmt.Errorf("Gob decode error: %v", err)
+		return errors.Errorf("Gob decode error: %v", err)
 	}
 
 	return nil
@@ -329,10 +333,10 @@ func (zip GobMeddler) PreWrite(field interface{}) (saveValue interface{}, err er
 		defer gzipWriter.Close()
 		gobEncoder := gob.NewEncoder(gzipWriter)
 		if err := gobEncoder.Encode(field); err != nil {
-			return nil, fmt.Errorf("Gob encoding/gzip error: %v", err)
+			return nil, errors.Errorf("Gob encoding/gzip error: %v", err)
 		}
 		if err := gzipWriter.Close(); err != nil {
-			return nil, fmt.Errorf("Closing gzip writer: %v", err)
+			return nil, errors.Errorf("Closing gzip writer: %v", err)
 		}
 
 		return buffer.Bytes(), nil
@@ -341,7 +345,31 @@ func (zip GobMeddler) PreWrite(field interface{}) (saveValue interface{}, err er
 	// gob encode
 	gobEncoder := gob.NewEncoder(buffer)
 	if err := gobEncoder.Encode(field); err != nil {
-		return nil, fmt.Errorf("Gob encoding error: %v", err)
+		return nil, errors.Errorf("Gob encoding error: %v", err)
 	}
 	return buffer.Bytes(), nil
+}
+
+func LogQueies(operaton string, query string, t time.Time, err error, args ...interface{}) {
+
+	sub := time.Now().Sub(t) / 1e5
+	elsp := float64(int(sub)) / 10.0
+	flag := "  OK"
+	if err != nil {
+		flag = "FAIL"
+	}
+	con := fmt.Sprintf(" [%s / %11s / %7.1fms] - [%s]", flag, operaton, elsp, query)
+	cons := make([]string, 0, len(args))
+	for _, arg := range args {
+		cons = append(cons, fmt.Sprintf("%v", arg))
+	}
+	if len(cons) > 0 {
+		con += fmt.Sprintf(" - `%s`", strings.Join(cons, "`, `"))
+	}
+	if err != nil {
+		con += " - " + err.Error()
+		logs.Error(con)
+	} else {
+		logs.Info(con)
+	}
 }

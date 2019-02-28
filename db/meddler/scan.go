@@ -2,12 +2,13 @@ package meddler
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"reflect"
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/pkg/errors"
 )
 
 // the name of our struct tag
@@ -81,11 +82,11 @@ func getFields(dstType reflect.Type) (*structData, error) {
 
 	// make sure dst is a non-nil pointer to a struct
 	if dstType.Kind() != reflect.Ptr {
-		return nil, fmt.Errorf("meddler called with non-pointer destination %v", dstType)
+		return nil, errors.Errorf("meddler called with non-pointer destination %v", dstType)
 	}
 	structType := dstType.Elem()
 	if structType.Kind() != reflect.Struct {
-		return nil, fmt.Errorf("meddler called with pointer to non-struct %v", dstType)
+		return nil, errors.Errorf("meddler called with pointer to non-struct %v", dstType)
 	}
 
 	// gather the list of fields in the struct
@@ -121,7 +122,7 @@ func getFields(dstType reflect.Type) (*structData, error) {
 		for j := 1; j < len(tag); j++ {
 			if tag[j] == "pk" {
 				if f.Type.Kind() == reflect.Ptr {
-					return nil, fmt.Errorf("meddler found field %s which is marked as the primary key but is a pointer", f.Name)
+					return nil, errors.Errorf("meddler found field %s which is marked as the primary key but is a pointer", f.Name)
 				}
 
 				// make sure it is an int of some kind
@@ -129,22 +130,22 @@ func getFields(dstType reflect.Type) (*structData, error) {
 				case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 				case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 				default:
-					return nil, fmt.Errorf("meddler found field %s which is marked as the primary key, but is not an integer type", f.Name)
+					return nil, errors.Errorf("meddler found field %s which is marked as the primary key, but is not an integer type", f.Name)
 				}
 
 				if data.pk != "" {
-					return nil, fmt.Errorf("meddler found field %s which is marked as the primary key, but a primary key field was already found", f.Name)
+					return nil, errors.Errorf("meddler found field %s which is marked as the primary key, but a primary key field was already found", f.Name)
 				}
 				data.pk = name
 			} else if m, present := registry[tag[j]]; present {
 				meddler = m
 			} else {
-				return nil, fmt.Errorf("meddler found field %s with meddler %s, but that meddler is not registered", f.Name, tag[j])
+				return nil, errors.Errorf("meddler found field %s with meddler %s, but that meddler is not registered", f.Name, tag[j])
 			}
 		}
 
 		if _, present := data.fields[name]; present {
-			return nil, fmt.Errorf("meddler found multiple fields for column %s", name)
+			return nil, errors.Errorf("meddler found multiple fields for column %s", name)
 		}
 		data.fields[name] = &structField{
 			column:     name,
@@ -224,7 +225,7 @@ func (d *Database) PrimaryKey(src interface{}) (name string, pk int64, err error
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		pk = int64(field.Uint())
 	default:
-		return "", 0, fmt.Errorf("meddler found field %s which is marked as the primary key, but is not an integer type", name)
+		return "", 0, errors.Errorf("meddler found field %s which is marked as the primary key, but is not an integer type", name)
 	}
 
 	return name, pk, nil
@@ -243,7 +244,7 @@ func (d *Database) SetPrimaryKey(src interface{}, pk int64) error {
 	}
 
 	if data.pk == "" {
-		return fmt.Errorf("meddler.SetPrimaryKey: no primary key field found")
+		return errors.Errorf("meddler.SetPrimaryKey: no primary key field found")
 	}
 
 	field := reflect.ValueOf(src).Elem().Field(data.fields[data.pk].index)
@@ -253,7 +254,7 @@ func (d *Database) SetPrimaryKey(src interface{}, pk int64) error {
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		field.SetUint(uint64(pk))
 	default:
-		return fmt.Errorf("meddler found field %s which is marked as the primary key, but is not an integer type", data.pk)
+		return errors.Errorf("meddler found field %s which is marked as the primary key, but is not an integer type", data.pk)
 	}
 
 	return nil
@@ -306,7 +307,7 @@ func (d *Database) SomeValues(src interface{}, columns []string) ([]interface{},
 
 		saveVal, err := field.meddler.PreWrite(structVal.Field(field.index).Interface())
 		if err != nil {
-			return nil, fmt.Errorf("meddler.SomeValues: PreWrite error on column [%s]: %v", name, err)
+			return nil, errors.Errorf("meddler.SomeValues: PreWrite error on column [%s]: %v", name, err)
 		}
 		values = append(values, saveVal)
 	}
@@ -408,7 +409,7 @@ func (d *Database) Targets(dst interface{}, columns []string) ([]interface{}, er
 			fieldAddr := structVal.Field(field.index).Addr().Interface()
 			scanTarget, err := field.meddler.PreRead(fieldAddr)
 			if err != nil {
-				return nil, fmt.Errorf("meddler.Targets: PreRead error on column %s: %v", name, err)
+				return nil, errors.Errorf("meddler.Targets: PreRead error on column %s: %v", name, err)
 			}
 			targets = append(targets, scanTarget)
 		} else {
@@ -434,7 +435,7 @@ func Targets(dst interface{}, columns []string) ([]interface{}, error) {
 // by Targets.
 func (d *Database) WriteTargets(dst interface{}, columns []string, targets []interface{}) error {
 	if len(columns) != len(targets) {
-		return fmt.Errorf("meddler.WriteTargets: mismatch in number of columns (%d) and targets (%s)",
+		return errors.Errorf("meddler.WriteTargets: mismatch in number of columns (%d) and targets (%s)",
 			len(columns), len(targets))
 	}
 
@@ -449,7 +450,7 @@ func (d *Database) WriteTargets(dst interface{}, columns []string, targets []int
 			fieldAddr := structVal.Field(field.index).Addr().Interface()
 			err := field.meddler.PostRead(fieldAddr, targets[i])
 			if err != nil {
-				return fmt.Errorf("meddler.WriteTargets: PostRead error on column [%s]: %v", name, err)
+				return errors.Errorf("meddler.WriteTargets: PostRead error on column [%s]: %v", name, err)
 			}
 		} else {
 			// not destination, so throw this away
@@ -524,19 +525,19 @@ func (d *Database) ScanAll(rows *sql.Rows, dst interface{}) error {
 	// make sure dst is an appropriate type
 	dstVal := reflect.ValueOf(dst)
 	if dstVal.Kind() != reflect.Ptr || dstVal.IsNil() {
-		return fmt.Errorf("ScanAll called with non-pointer destination: %T", dst)
+		return errors.Errorf("ScanAll called with non-pointer destination: %T", dst)
 	}
 	sliceVal := dstVal.Elem()
 	if sliceVal.Kind() != reflect.Slice {
-		return fmt.Errorf("ScanAll called with pointer to non-slice: %T", dst)
+		return errors.Errorf("ScanAll called with pointer to non-slice: %T", dst)
 	}
 	ptrType := sliceVal.Type().Elem()
 	if ptrType.Kind() != reflect.Ptr {
-		return fmt.Errorf("ScanAll expects element to be pointers, found %T", dst)
+		return errors.Errorf("ScanAll expects element to be pointers, found %T", dst)
 	}
 	eltType := ptrType.Elem()
 	if eltType.Kind() != reflect.Struct {
-		return fmt.Errorf("ScanAll expects element to be pointers to structs, found %T", dst)
+		return errors.Errorf("ScanAll expects element to be pointers to structs, found %T", dst)
 	}
 
 	// get the list of struct fields

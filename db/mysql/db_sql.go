@@ -469,3 +469,15 @@ func GetFieldByStruct(t reflect.Type) []string {
 	}
 	return out
 }
+
+func GetFieldMapByStruct(t reflect.Type) map[string]string {
+	var out = make(map[string]string)
+	for i := 0; i < t.NumField(); i++ {
+		fi := t.Field(i)
+		if tagv := fi.Tag.Get("meddler"); tagv != "" && tagv != "-" {
+			keyname := strings.Split(tagv, ",")[0]
+			out[keyname] = ""
+		}
+	}
+	return out
+}
