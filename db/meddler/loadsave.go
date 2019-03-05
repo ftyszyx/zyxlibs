@@ -79,7 +79,7 @@ func LoadByKey(db DB, table string, dst interface{}, key string, value interface
 // If the record has a primary key flagged, it must be zero, and it
 // will be set to the newly-allocated primary key value from the database
 // as returned by LastInsertId.
-func (d *Database) Insert(db DB, table string, src interface{}) error {
+func (d *Database) Insert(db DB, table string, src interface{}, replace bool) error {
 	pkName, pkValue, err := d.PrimaryKey(src)
 	if err != nil {
 		return err
@@ -103,7 +103,13 @@ func (d *Database) Insert(db DB, table string, src interface{}) error {
 	}
 
 	// run the query
-	q := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", d.quoted(table), namesPart, valuesPart)
+	var q string
+	if replace {
+		q = fmt.Sprintf("REPLACE INTO %s (%s) VALUES (%s)", d.quoted(table), namesPart, valuesPart)
+	} else {
+		q = fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", d.quoted(table), namesPart, valuesPart)
+	}
+
 	if d.UseReturningToGetID && pkName != "" {
 		q += " RETURNING " + d.quoted(pkName)
 		var newPk int64
@@ -147,7 +153,11 @@ func (d *Database) Insert(db DB, table string, src interface{}) error {
 
 // Insert using the Default Database type
 func Insert(db DB, table string, src interface{}) error {
-	return Default.Insert(db, table, src)
+	return Default.Insert(db, table, src, false)
+}
+
+func InsertReplace(db DB, table string, src interface{}) error {
+	return Default.Insert(db, table, src, true)
 }
 
 // Update performs and UPDATE query for the given record.
@@ -218,7 +228,7 @@ func (d *Database) Save(db DB, table string, src interface{}) error {
 	if pkName != "" && pkValue != 0 {
 		return d.Update(db, table, src)
 	} else {
-		return d.Insert(db, table, src)
+		return d.Insert(db, table, src, false)
 	}
 }
 
@@ -236,7 +246,7 @@ func (d *Database) QueryRow(db DB, dst interface{}, query string, args ...interf
 	rows, err := db.Query(query, args...)
 	LogQueies("db.Query", query, begintime, err, args...)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	// gather the result
@@ -256,7 +266,7 @@ func (d *Database) QueryAll(db DB, dst interface{}, query string, args ...interf
 	rows, err := db.Query(query, args...)
 	LogQueies("db.Query", query, begintime, err, args...)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	// gather the results

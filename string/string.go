@@ -3,6 +3,7 @@ package string
 import (
 	"bytes"
 	"io/ioutil"
+	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
@@ -10,9 +11,9 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/axgle/mahonia"
 	"github.com/ftyszyx/libs/beego"
 	"github.com/ftyszyx/libs/beego/logs"
-	"github.com/axgle/mahonia"
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/transform"
 )
@@ -139,4 +140,42 @@ func SliceIndex(itemlist []string, callback func(item string) bool) int {
 		}
 	}
 	return -1
+}
+
+func GetScheme(r *http.Request) string {
+	switch {
+	case r.URL.Scheme == "https":
+		return "https"
+	case r.TLS != nil:
+		return "https"
+	case strings.HasPrefix(r.Proto, "HTTPS"):
+		return "https"
+	case r.Header.Get("X-Forwarded-Proto") == "https":
+		return "https"
+	default:
+		return "http"
+	}
+}
+
+func GetHost(r *http.Request) string {
+	switch {
+	case len(r.Host) != 0:
+		return r.Host
+	case len(r.URL.Host) != 0:
+		return r.URL.Host
+	case len(r.Header.Get("X-Forwarded-For")) != 0:
+		return r.Header.Get("X-Forwarded-For")
+	case len(r.Header.Get("X-Host")) != 0:
+		return r.Header.Get("X-Host")
+	case len(r.Header.Get("XFF")) != 0:
+		return r.Header.Get("XFF")
+	case len(r.Header.Get("X-Real-IP")) != 0:
+		return r.Header.Get("X-Real-IP")
+	default:
+		return "localhost:8080"
+	}
+}
+
+func GetURL(r *http.Request) string {
+	return GetScheme(r) + "://" + GetHost(r)
 }

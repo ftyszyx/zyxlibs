@@ -1,57 +1,51 @@
 package string
 
 import (
+	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
-	"encoding/hex"
-	"fmt"
 )
 
-func ExampleNewGCM_encrypt(src, k, n string) string {
-	// The key argument should be the AES key, either 16 or 32 bytes
-	// to select AES-128 or AES-256.
-	key := []byte(k)
-	plaintext := []byte(src)
-
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	nonce, _ := hex.DecodeString(n)
-
-	aesgcm, err := cipher.NewGCM(block)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	ciphertext := aesgcm.Seal(nil, nonce, plaintext, nil)
-
-	return fmt.Sprintf("%x", ciphertext)
+func PKCS7Padding(ciphertext []byte, blockSize int) []byte {
+	padding := blockSize - len(ciphertext)%blockSize
+	padtext := bytes.Repeat([]byte{byte(padding)}, padding)
+	return append(ciphertext, padtext...)
 }
 
-func ExampleNewGCM_decrypt(src, k, n string) string {
-	// The key argument should be the AES key, either 16 or 32 bytes
-	// to select AES-128 or AES-256.
-	key := []byte(k)
-	ciphertext, _ := hex.DecodeString(src)
+func PKCS7UnPadding(origData []byte) []byte {
+	length := len(origData)
+	unpadding := int(origData[length-1])
+	return origData[:(length - unpadding)]
+}
 
-	nonce, _ := hex.DecodeString(n)
-
+// The key argument should be the AES key,
+// either 16, 24, or 32 bytes to select
+// AES-128, AES-192, or AES-256.
+func AesEncrypt(origData, key []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		panic(err.Error())
+		return nil, err
 	}
+	blockSize := block.BlockSize()
+	origData = PKCS7Padding(origData, blockSize)
+	blockMode := cipher.NewCBCEncrypter(block, key[:blockSize])
+	crypted := make([]byte, len(origData))
+	blockMode.CryptBlocks(crypted, origData)
+	return crypted, nil
+}
 
-	aesgcm, err := cipher.NewGCM(block)
+// The key argument should be the AES key,
+// either 16, 24, or 32 bytes to select
+// AES-128, AES-192, or AES-256.
+func AesDecrypt(crypted, key []byte) ([]byte, error) {
+	block, err := aes.NewCipher(key)
 	if err != nil {
-		panic(err.Error())
+		return nil, err
 	}
-
-	plaintext, err := aesgcm.Open(nil, nonce, ciphertext, nil)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	return string(plaintext)
+	blockSize := block.BlockSize()
+	blockMode := cipher.NewCBCDecrypter(block, key[:blockSize])
+	origData := make([]byte, len(crypted))
+	blockMode.CryptBlocks(origData, crypted)
+	origData = PKCS7UnPadding(origData)
+	return origData, nil
 }
