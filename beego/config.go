@@ -21,6 +21,7 @@ import (
 	"reflect"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/ftyszyx/libs/beego/config"
 	"github.com/ftyszyx/libs/beego/context"
@@ -449,6 +450,17 @@ func (b *beegoAppConfig) DefaultString(key string, defaultVal string) string {
 		return v
 	}
 	return defaultVal
+}
+
+func (b *beegoAppConfig) Duration(key string) time.Duration {
+	if v := b.String(key); v != "" {
+		parsed, err := time.ParseDuration(v)
+		if err != nil {
+			return 0
+		}
+		return parsed
+	}
+	return 0
 }
 
 func (b *beegoAppConfig) DefaultStrings(key string, defaultVal []string) []string {

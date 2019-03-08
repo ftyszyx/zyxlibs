@@ -52,7 +52,7 @@ func AddAPPStartHook(hf ...hookfunc) {
 // beego.Run("127.0.0.1:8089")
 func Run(params ...string) {
 
-	initBeforeHTTPRun()
+	InitBeforeHTTPRun()
 
 	if len(params) > 0 && params[0] != "" {
 		strs := strings.Split(params[0], ":")
@@ -69,7 +69,7 @@ func Run(params ...string) {
 
 // RunWithMiddleWares Run beego application with middlewares.
 func RunWithMiddleWares(addr string, mws ...MiddleWare) {
-	initBeforeHTTPRun()
+	InitBeforeHTTPRun()
 
 	strs := strings.Split(addr, ":")
 	if len(strs) > 0 && strs[0] != "" {
@@ -82,7 +82,7 @@ func RunWithMiddleWares(addr string, mws ...MiddleWare) {
 	BeeApp.Run(mws...)
 }
 
-func initBeforeHTTPRun() {
+func InitBeforeHTTPRun() {
 	//init hooks
 	AddAPPStartHook(
 		registerMime,
@@ -113,5 +113,5 @@ func InitBeegoBeforeTest(appConfigPath string) {
 		panic(err)
 	}
 	BConfig.RunMode = "test"
-	initBeforeHTTPRun()
+	InitBeforeHTTPRun()
 }
