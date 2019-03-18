@@ -1,8 +1,11 @@
 package string
 
 import (
+	"encoding/base32"
 	"encoding/json"
 	"time"
+
+	"github.com/ftyszyx/libs/beego/logs"
 
 	"github.com/pkg/errors"
 )
@@ -25,20 +28,25 @@ func NewToken(value string, expiretime int64) *TokenData {
 func (data *TokenData) GetToken(password string) (string, error) {
 	text, err := json.Marshal(data)
 	if err != nil {
-		return "", err
+		return "", errors.WithStack(err)
 	}
 
-	res, err := AesEncrypt([]byte(text), []byte(password))
+	res, err := AesEncrypt(text, []byte(password))
 	if err != nil {
 		return "", err
 	}
 
-	return string(res), err
+	return base32.StdEncoding.EncodeToString(res), err
 }
 
 func ParseToken(tokenstr string, key string) (*TokenData, error) {
 
-	origData, err := AesDecrypt([]byte(tokenstr), []byte(key))
+	aesstr, err := base32.StdEncoding.DecodeString(tokenstr)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	origData, err := AesDecrypt(aesstr, []byte(key))
+	logs.Info("origin:%s", string(origData))
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +54,7 @@ func ParseToken(tokenstr string, key string) (*TokenData, error) {
 	var tokendata = new(TokenData)
 	err = json.Unmarshal(origData, tokendata)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	if tokendata.Expire > 0 && tokendata.Expire < time.Now().Unix() {

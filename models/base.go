@@ -38,6 +38,8 @@ type ModelInterface interface {
 	Cache() cache.Cache
 	ClearCache()
 	ClearRowCache(string)
+	ClearRowCacheByKey(key string, id string)
+	GetInfoAndCacheByKey(mysql.DBOperIO, string, string, bool) mysql.Params
 	GetModelStruct() interface{}
 
 	GetFieldName(string) string
@@ -94,6 +96,19 @@ func (self *Model) Cache() cache.Cache {
 	return self.cache
 }
 
+//清除缓存
+func (self *Model) ClearRowCache(id string) {
+	if self.cache != nil {
+		self.cache.Delete("id-" + id)
+	}
+}
+
+func (self *Model) ClearRowCacheByKey(key string, id string) {
+	if self.cache != nil {
+		self.cache.Delete(key + "-" + id)
+	}
+}
+
 func (self *Model) TableName() string {
 	return self.tablename
 }
@@ -131,12 +146,16 @@ func (self *Model) CheckExit(oper mysql.DBOperIO, field string, value interface{
 	return self.CheckExitMap(oper, data)
 }
 
-//获取表里面的一项，默认从内存取，如果内存没有，就从数据库取，并缓存。
 func (self *Model) GetInfoAndCache(oper mysql.DBOperIO, uid string, forceUpdate bool) mysql.Params {
+	return self.GetInfoAndCacheByKey(oper, "id", uid, forceUpdate)
+}
+
+//获取表里面的一项，默认从内存取，如果内存没有，就从数据库取，并缓存。
+func (self *Model) GetInfoAndCacheByKey(oper mysql.DBOperIO, key string, uid string, forceUpdate bool) mysql.Params {
 	if forceUpdate == false {
 		//读旧的
 		if self.cache != nil {
-			datatemp := self.cache.Get(uid)
+			datatemp := self.cache.Get(key + "-" + uid)
 			if datatemp != nil {
 				info, ok := datatemp.(map[string]interface{})
 				if ok {
@@ -147,13 +166,11 @@ func (self *Model) GetInfoAndCache(oper mysql.DBOperIO, uid string, forceUpdate 
 		}
 
 	}
-	// logs.Info("find info")
-	// o := orm.NewOrm()
 	var dataList []mysql.Params
-	num, err := oper.Raw(fmt.Sprintf(`select * from %s where id=?`, self.TableName()), uid).Values(&dataList)
+	num, err := oper.Raw(fmt.Sprintf(`select * from %s where %s=?`, self.TableName(), key), uid).Values(&dataList)
 	if err == nil && num > 0 {
 		if self.cache != nil {
-			self.cache.Put(uid, dataList[0], 0)
+			self.cache.Put(key+"-"+uid, dataList[0], 0)
 		} else {
 			logs.Error("tablename:%s no cache", self.tablename)
 		}
@@ -220,13 +237,6 @@ func (self *Model) GetInfoByWhere(oper mysql.DBOperIO, where string) ([]mysql.Pa
 	}
 
 	return nil, nil
-}
-
-//清除缓存
-func (self *Model) ClearRowCache(id string) {
-	if self.cache != nil {
-		self.cache.Delete(id)
-	}
 }
 
 func (self *Model) AllExcCommon(oper mysql.DBOperIO, model ModelInterface, data AllReqData, gettype int) (error, int, []mysql.Params) {
