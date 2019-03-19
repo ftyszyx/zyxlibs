@@ -69,6 +69,10 @@ func (self *Model) InitField(sql mysql.SqlType) mysql.SqlType {
 	return sql
 }
 
+func GetCacheKey(key string, id string) string {
+	return key + "-" + id
+}
+
 func (self *Model) ExportNameProcess(name string, value interface{}, row mysql.Params) (string, error) {
 	if value == nil {
 		logs.Info("field %s is nil", name)
@@ -99,13 +103,13 @@ func (self *Model) Cache() cache.Cache {
 //清除缓存
 func (self *Model) ClearRowCache(id string) {
 	if self.cache != nil {
-		self.cache.Delete("id-" + id)
+		self.cache.Delete(GetCacheKey("id", id))
 	}
 }
 
 func (self *Model) ClearRowCacheByKey(key string, id string) {
 	if self.cache != nil {
-		self.cache.Delete(key + "-" + id)
+		self.cache.Delete(GetCacheKey(key, id))
 	}
 }
 
@@ -152,14 +156,14 @@ func (self *Model) GetInfoAndCache(oper mysql.DBOperIO, uid string, forceUpdate 
 
 //获取表里面的一项，默认从内存取，如果内存没有，就从数据库取，并缓存。
 func (self *Model) GetInfoAndCacheByKey(oper mysql.DBOperIO, key string, uid string, forceUpdate bool) mysql.Params {
+
 	if forceUpdate == false {
 		//读旧的
 		if self.cache != nil {
-			datatemp := self.cache.Get(key + "-" + uid)
+			datatemp := self.cache.Get(GetCacheKey(key, uid))
 			if datatemp != nil {
-				info, ok := datatemp.(map[string]interface{})
+				info, ok := datatemp.(mysql.Params)
 				if ok {
-					// logs.Info("old info")
 					return info
 				}
 			}
@@ -170,7 +174,7 @@ func (self *Model) GetInfoAndCacheByKey(oper mysql.DBOperIO, key string, uid str
 	num, err := oper.Raw(fmt.Sprintf(`select * from %s where %s=?`, self.TableName(), key), uid).Values(&dataList)
 	if err == nil && num > 0 {
 		if self.cache != nil {
-			self.cache.Put(key+"-"+uid, dataList[0], 0)
+			self.cache.Put(GetCacheKey(key, uid), dataList[0], 0)
 		} else {
 			logs.Error("tablename:%s no cache", self.tablename)
 		}

@@ -73,21 +73,25 @@ func (self *BaseController) EditCommonAndReturn(sqlcall SqlIO) {
 }
 
 func (self *BaseController) EditCommon(sqlcall SqlIO) error {
+	return self.EditCommonByKey(sqlcall, "id")
+}
+
+func (self *BaseController) EditCommonByKey(sqlcall SqlIO, key string) error {
 	modelcheck := self.model.GetModelStruct()
-	if self.CheckFieldExit(self.GetPost(), "id") == false {
+	if self.CheckFieldExit(self.GetPost(), key) == false {
 		return errors.New("id为空")
 	}
-	id := self.GetPost()["id"].(string)
+	id := self.GetPost()[key].(string)
 	err := self.CheckExit(modelcheck, self.GetPost(), true)
 	if err != nil {
 		return err
 	}
 	changedata := libs.ClearMapByStruct(self.GetPost(), modelcheck)
-	delete(changedata, "id")
+	delete(changedata, key)
 	if len(changedata) == 0 {
 		return errors.New("没有修改")
 	}
-	return self.UpdateSqlCommon(sqlcall, changedata, "id", id)
+	return self.UpdateSqlCommon(sqlcall, changedata, key, id)
 }
 
 func (self *BaseController) UpdateSqlByIdAndReturn(sqlcall SqlIO, changedata map[string]interface{}, id interface{}) {
