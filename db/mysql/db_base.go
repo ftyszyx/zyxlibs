@@ -18,8 +18,12 @@ type ParamsList []interface{}
 
 //新建一个操作
 func NewOper() DBOperIO {
+	return NewOperName("default")
+}
+
+func NewOperName(name string) DBOperIO {
 	o := new(DBOper)
-	err := o.Using("default")
+	err := o.Using(name)
 	if err != nil {
 		panic(err)
 	}

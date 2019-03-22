@@ -229,7 +229,6 @@ func (self *Model) GetNumByField(oper mysql.DBOperIO, search map[string]interfac
 }
 
 func (self *Model) GetInfoByWhere(oper mysql.DBOperIO, where string) ([]mysql.Params, error) {
-	// o := orm.NewOrm()
 	var dataList []mysql.Params
 	num, err := oper.Raw(fmt.Sprintf("select * from %s where %s", self.TableName(), where)).Values(&dataList)
 	if err == nil && num > 0 {
