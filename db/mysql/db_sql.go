@@ -105,6 +105,14 @@ func (self *SqlBuild) NeedJointable(tablename string) bool {
 			return true
 		}
 	}
+
+	for key, _ := range self.field {
+		strarr := strings.Split(key, ".")
+		if len(strarr) > 1 && strarr[0] == tablename {
+			return true
+		}
+	}
+
 	return false
 }
 
