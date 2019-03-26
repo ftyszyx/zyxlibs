@@ -367,9 +367,9 @@ func (d *Database) scanRow(data *structData, rows *sql.Rows, dst interface{}, co
 	// check if there is data waiting
 	if !rows.Next() {
 		if err := rows.Err(); err != nil {
-			return err
+			return errors.WithStack(err)
 		}
-		return sql.ErrNoRows
+		return errors.WithStack(sql.ErrNoRows)
 	}
 
 	// get a list of targets
@@ -380,7 +380,7 @@ func (d *Database) scanRow(data *structData, rows *sql.Rows, dst interface{}, co
 
 	// perform the scan
 	if err := rows.Scan(targets...); err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	// post-process and copy the target values into the struct
@@ -388,7 +388,7 @@ func (d *Database) scanRow(data *structData, rows *sql.Rows, dst interface{}, co
 		return err
 	}
 
-	return rows.Err()
+	return errors.WithStack(rows.Err())
 }
 
 // Targets returns a list of values suitable for handing to a
