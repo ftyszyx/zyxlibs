@@ -38,13 +38,14 @@ type ModelInterface interface {
 	Cache() cache.Cache
 	ClearCache()
 	ClearRowCache(string)
-	ClearRowCacheByKey(key string, id string)
-	GetInfoAndCacheByKey(mysql.DBOperIO, string, string, bool) mysql.Params
+	ClearRowCacheByKey(keyname string, keyvalue string)
+	GetInfoAndCache(mysql.DBOperIO, string, bool) mysql.Params
+	GetInfoAndCacheByKey(oper mysql.DBOperIO, keyname string, keyvalue string, forceUpdate bool) mysql.Params
 	GetModelStruct() interface{}
 
 	GetFieldName(string) string
 	ExportNameProcess(string, interface{}, mysql.Params) (string, error)
-	GetInfoAndCache(mysql.DBOperIO, string, bool) mysql.Params
+
 	CheckExit(mysql.DBOperIO, string, interface{}) bool
 	GetInfoById(mysql.DBOperIO, interface{}) mysql.Params
 	AllExcCommon(mysql.DBOperIO, ModelInterface, AllReqData, int) (error, int, []mysql.Params)
