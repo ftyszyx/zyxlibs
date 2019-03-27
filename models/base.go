@@ -61,6 +61,7 @@ type AllReqData struct {
 	Order  map[string]interface{}
 	And    bool
 	Search map[string]interface{}
+	Field  map[string]string
 }
 
 func (self *Model) InitJoinString(sql mysql.SqlType, allfield bool) mysql.SqlType {
@@ -247,17 +248,16 @@ func (self *Model) AllExcCommon(oper mysql.DBOperIO, model ModelInterface, data 
 
 	var totalnum = 0
 	var dataList []mysql.Params
-	var sqltext mysql.SqlType
-	sqltext = &mysql.SqlBuild{}
-	sqltext = sqltext.Name(model.TableName())
+	sqlbuild := mysql.NewSqlBuild()
+	sqlbuild = sqlbuild.Name(model.TableName())
 
 	if data.And {
-		sqltext = sqltext.Where(data.Search)
+		sqlbuild = sqlbuild.Where(data.Search)
 	} else {
-		sqltext = sqltext.WhereOr(data.Search)
+		sqlbuild = sqlbuild.WhereOr(data.Search)
 	}
-	sqltext = model.InitJoinString(sqltext, false)
-	num, err := oper.Raw(sqltext.Count()).Values(&dataList)
+	sqlbuild = model.InitJoinString(sqlbuild, false)
+	num, err := oper.Raw(sqlbuild.Count()).Values(&dataList)
 	if err == nil && num > 0 {
 		totalnum, err = strconv.Atoi(dataList[0][mysql.SQLTotalName].(string))
 		if err != nil {
@@ -267,17 +267,20 @@ func (self *Model) AllExcCommon(oper mysql.DBOperIO, model ModelInterface, data 
 		if gettype == utils.GetAll_type_num {
 			return nil, totalnum, nil
 		}
-		sqltext = sqltext.Order(data.Order)
-		sqltext = model.InitJoinString(sqltext, false)
+		sqlbuild = sqlbuild.Order(data.Order)
+		sqlbuild = model.InitJoinString(sqlbuild, false)
 		if data.Page == 0 {
 			//不用分页
-			sqltext = model.InitJoinString(model.InitField(sqltext), true)
+			if data.Field != nil {
+				sqlbuild = model.InitJoinString(sqlbuild.Field(data.Field), false)
+			} else {
+				sqlbuild = model.InitJoinString(model.InitField(sqlbuild), true)
+			}
 
-			num, err = oper.Raw(sqltext.Select()).Values(&dataList)
+			num, err = oper.Raw(sqlbuild.Select()).Values(&dataList)
 			if err == nil {
 				return nil, totalnum, dataList
 			} else {
-				//logs.Error("err:%s statck:\n %s", err.Error(), string(debug.Stack()))
 				return errors.WithStack(err), 0, nil
 			}
 		} else {
@@ -285,36 +288,43 @@ func (self *Model) AllExcCommon(oper mysql.DBOperIO, model ModelInterface, data 
 			var start = (data.Page - 1) * data.Rownum
 			if totalnum > 1000 {
 				//总数很多
-				tablealias := sqltext.GetAlias()
+				tablealias := sqlbuild.GetAlias()
 				selfidname := "id"
 				if tablealias != "" {
 					selfidname = tablealias + ".id"
 				}
-				subsql := sqltext.Limit([]int{start, data.Rownum}).Field(map[string]string{selfidname: "id"}).Select()
-				var newsqltext mysql.SqlType
-				newsqltext = &mysql.SqlBuild{}
-				newsqltext = newsqltext.Name(model.TableName()).Order(data.Order)
-				// newsqltext = newsqltext.Name(model.TableName())
-				newsqltext = model.InitJoinString(model.InitField(newsqltext), true)
-				oldjoinstr := newsqltext.GetJoinStr()
-				newsqltext.Join(oldjoinstr + fmt.Sprintf(" INNER join (%s) a ON `a`.`id`=%s ", subsql, mysql.SqlGetKey(selfidname)))
-				num, err = oper.Raw(newsqltext.Select()).Values(&dataList)
+				subsql := sqlbuild.Limit([]int{start, data.Rownum}).Field(map[string]string{selfidname: "id"}).Select()
+
+				newsqlbuild := mysql.NewSqlBuild()
+				newsqlbuild = newsqlbuild.Name(model.TableName()).Order(data.Order)
+
+				if data.Field != nil {
+					newsqlbuild = model.InitJoinString(newsqlbuild.Field(data.Field), false)
+				} else {
+					newsqlbuild = model.InitJoinString(model.InitField(newsqlbuild), true)
+				}
+
+				oldjoinstr := newsqlbuild.GetJoinStr()
+				newsqlbuild.Join(oldjoinstr + fmt.Sprintf(" INNER join (%s) a ON `a`.`id`=%s ", subsql, mysql.SqlGetKey(selfidname)))
+				num, err = oper.Raw(newsqlbuild.Select()).Values(&dataList)
 				if err == nil {
 					return nil, totalnum, dataList
 				} else {
-					//logs.Error("err:%s statck:\n %s", err.Error(), string(debug.Stack()))
 					return errors.WithStack(err), 0, nil
 				}
 
 			} else {
 				//按正常方式
-				sqltext = model.InitJoinString(model.InitField(sqltext), true)
-				num, err = oper.Raw(sqltext.Limit([]int{start, data.Rownum}).Select()).Values(&dataList)
+				if data.Field != nil {
+					sqlbuild = model.InitJoinString(sqlbuild.Field(data.Field), false)
+				} else {
+					sqlbuild = model.InitJoinString(model.InitField(sqlbuild), true)
+				}
+
+				num, err = oper.Raw(sqlbuild.Limit([]int{start, data.Rownum}).Select()).Values(&dataList)
 				if err == nil {
 					return nil, totalnum, dataList
 				} else {
-					//logs.Error("err:%s statck:\n %s", err.Error(), string(debug.Stack()))
-
 					return errors.WithStack(err), 0, nil
 				}
 			}
