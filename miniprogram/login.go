@@ -14,7 +14,7 @@ const (
 
 type ResAccessToken struct {
 	Openid      string `json:"openid"`
-	Session_key int64  `json:"session_key"`
+	Session_key string `json:"session_key"`
 	Unionid     string `json:"unionid"`
 	Errcode     int    `json:"errcode"`
 	Errmsg      string `json:"errmsg"`
