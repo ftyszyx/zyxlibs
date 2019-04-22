@@ -63,6 +63,7 @@ type AllReqData struct {
 	Search  map[string]interface{}
 	Field   map[string]string
 	Joinstr string
+	Alia    string
 }
 
 func (self *Model) InitJoinString(sql mysql.SqlType, allfield bool) mysql.SqlType {
@@ -262,6 +263,9 @@ func (self *Model) AllExcCommon(oper mysql.DBOperIO, model ModelInterface, data 
 	if data.Joinstr != "" {
 		sqlbuild.Join(data.Joinstr)
 	}
+	if data.Alia != "" {
+		sqlbuild.Alias(data.Alia)
+	}
 
 	num, err := oper.Raw(sqlbuild.Count()).Values(&dataList)
 	if err == nil && num > 0 {
@@ -317,7 +321,10 @@ func (self *Model) AllExcCommon(oper mysql.DBOperIO, model ModelInterface, data 
 					newsqlbuild = model.InitJoinString(model.InitField(newsqlbuild), true)
 				}
 				if data.Joinstr != "" {
-					sqlbuild.Join(data.Joinstr)
+					newsqlbuild.Join(data.Joinstr)
+				}
+				if data.Alia != "" {
+					newsqlbuild.Alias(data.Alia)
 				}
 
 				oldjoinstr := newsqlbuild.GetJoinStr()
