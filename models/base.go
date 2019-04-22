@@ -56,12 +56,13 @@ type ModelInterface interface {
 
 //获取所有时请求数据
 type AllReqData struct {
-	Page   int
-	Rownum int
-	Order  map[string]interface{}
-	And    bool
-	Search map[string]interface{}
-	Field  map[string]string
+	Page    int
+	Rownum  int
+	Order   map[string]interface{}
+	And     bool
+	Search  map[string]interface{}
+	Field   map[string]string
+	Joinstr string
 }
 
 func (self *Model) InitJoinString(sql mysql.SqlType, allfield bool) mysql.SqlType {
@@ -256,7 +257,12 @@ func (self *Model) AllExcCommon(oper mysql.DBOperIO, model ModelInterface, data 
 	} else {
 		sqlbuild = sqlbuild.WhereOr(data.Search)
 	}
+
 	sqlbuild = model.InitJoinString(sqlbuild, false)
+	if data.Joinstr != "" {
+		sqlbuild.Join(data.Joinstr)
+	}
+
 	num, err := oper.Raw(sqlbuild.Count()).Values(&dataList)
 	if err == nil && num > 0 {
 		totalnum, err = strconv.Atoi(dataList[0][mysql.SQLTotalName].(string))
@@ -269,12 +275,19 @@ func (self *Model) AllExcCommon(oper mysql.DBOperIO, model ModelInterface, data 
 		}
 		sqlbuild = sqlbuild.Order(data.Order)
 		sqlbuild = model.InitJoinString(sqlbuild, false)
+		if data.Joinstr != "" {
+			sqlbuild.Join(data.Joinstr)
+		}
 		if data.Page == 0 {
 			//不用分页
 			if data.Field != nil {
 				sqlbuild = model.InitJoinString(sqlbuild.Field(data.Field), false)
 			} else {
 				sqlbuild = model.InitJoinString(model.InitField(sqlbuild), true)
+			}
+
+			if data.Joinstr != "" {
+				sqlbuild.Join(data.Joinstr)
 			}
 
 			num, err = oper.Raw(sqlbuild.Select()).Values(&dataList)
@@ -303,6 +316,9 @@ func (self *Model) AllExcCommon(oper mysql.DBOperIO, model ModelInterface, data 
 				} else {
 					newsqlbuild = model.InitJoinString(model.InitField(newsqlbuild), true)
 				}
+				if data.Joinstr != "" {
+					sqlbuild.Join(data.Joinstr)
+				}
 
 				oldjoinstr := newsqlbuild.GetJoinStr()
 				newsqlbuild.Join(oldjoinstr + fmt.Sprintf(" INNER join (%s) a ON `a`.`id`=%s ", subsql, mysql.SqlGetKey(selfidname)))
@@ -319,6 +335,9 @@ func (self *Model) AllExcCommon(oper mysql.DBOperIO, model ModelInterface, data 
 					sqlbuild = model.InitJoinString(sqlbuild.Field(data.Field), false)
 				} else {
 					sqlbuild = model.InitJoinString(model.InitField(sqlbuild), true)
+				}
+				if data.Joinstr != "" {
+					sqlbuild.Join(data.Joinstr)
 				}
 
 				num, err = oper.Raw(sqlbuild.Limit([]int{start, data.Rownum}).Select()).Values(&dataList)
