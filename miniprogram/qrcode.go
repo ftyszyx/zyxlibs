@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/ftyszyx/libs/beego"
-	"github.com/ftyszyx/libs/beego/httplib"
 	"github.com/ftyszyx/libs/beego/logs"
 	"github.com/ftyszyx/libs/qiniu"
 	zyxstr "github.com/ftyszyx/libs/string"
@@ -24,9 +26,31 @@ type QRCode struct {
 	Errmsg      string `json:"errmsg"`
 }
 
-func (oauth *MiniData) GetQrCode(scene string, page string, width string) (url string, err error) {
+type QRCoderReq struct {
+	Page string `json:"page,omitempty"`
+	// path 识别二维码后进入小程序的页面链接
+	Path string `json:"path,omitempty"`
+	// width 图片宽度
+	Width int `json:"width,omitempty"`
+	// scene 参数数据
+	Scene string `json:"scene,omitempty"`
+	// autoColor 自动配置线条颜色，如果颜色依然是黑色，则说明不建议配置主色调
+	AutoColor bool `json:"auto_color,omitempty"`
+	// lineColor AutoColor 为 false 时生效，使用 rgb 设置颜色 例如 {"r":"xxx","g":"xxx","b":"xxx"},十进制表示
+	LineColor Color `json:"line_color,omitempty"`
+	// isHyaline 是否需要透明底色
+	IsHyaline bool `json:"is_hyaline,omitempty"`
+}
 
-	keystr := page + scene + width
+type Color struct {
+	R string `json:"r"`
+	G string `json:"g"`
+	B string `json:"b"`
+}
+
+func (oauth *MiniData) GetQrCode(scene string, page string, width int) (url string, err error) {
+
+	keystr := page + scene + strconv.Itoa(width)
 	md5str := zyxstr.GetStrMD5(keystr)
 	tempfolder := beego.AppConfig.String("site.tempfolder")
 	host := beego.AppConfig.String("qiniu.host")
@@ -52,17 +76,27 @@ func (oauth *MiniData) GetQrCode(scene string, page string, width string) (url s
 
 	//请求码
 	urlstr := fmt.Sprintf(getqrcode_url, res.Access_token)
-	var response []byte
-	req := httplib.Post(urlstr)
-	//req.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
-	req.Header("Content-Type", "application/x-www-form-urlencoded")
 
-	req.Param("scene", scene)
-	req.Param("page", page)
-	req.Param("width", width)
+	senddata := new(QRCoderReq)
+	senddata.Page = page
+	senddata.Scene = scene
+	senddata.Width = width
+	reqbody, jsonerr := json.Marshal(senddata)
+	if jsonerr != nil {
+		err = jsonerr
+		return
+	}
+	qrres, qrerr := http.Post(urlstr, "application/json", strings.NewReader(string(reqbody)))
+	if qrerr != nil {
+		err = qrerr
+		return
+	}
+
 	logs.Info("url:%s ", urlstr)
 
-	response, err = req.Bytes()
+	defer qrres.Body.Close()
+	var response []byte
+	response, err = ioutil.ReadAll(qrres.Body)
 	if err != nil {
 		return
 	}
