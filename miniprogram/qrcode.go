@@ -7,6 +7,7 @@ import (
 
 	"github.com/ftyszyx/libs/beego"
 	"github.com/ftyszyx/libs/beego/httplib"
+	"github.com/ftyszyx/libs/beego/logs"
 	"github.com/ftyszyx/libs/qiniu"
 	zyxstr "github.com/ftyszyx/libs/string"
 	"github.com/pkg/errors"
@@ -54,17 +55,20 @@ func (oauth *MiniData) GetQrCode(scene string, page string, width string) (url s
 	var response []byte
 	req := httplib.Post(urlstr)
 	//req.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
-	//req.Header("Content-Type", "application/x-www-form-urlencoded")
+	req.Header("Content-Type", "application/x-www-form-urlencoded")
 
 	req.Param("scene", scene)
 	req.Param("page", page)
 	req.Param("width", width)
-	// req.Param("access_token", access_token)
+	logs.Info("url:%s ", urlstr)
+
 	response, err = req.Bytes()
 	if err != nil {
 		return
 	}
+	logs.Info("response:%s ", string(response))
 	var getData map[string]interface{}
+
 	err = json.Unmarshal(response, &getData)
 	if err != nil {
 		return
