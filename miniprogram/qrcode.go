@@ -23,7 +23,7 @@ type QRCode struct {
 	Errmsg      string `json:"errmsg"`
 }
 
-func (oauth *MiniData) GetQrCode(code string, scene string, page string, width string) (url string, err error) {
+func (oauth *MiniData) GetQrCode(scene string, page string, width string) (url string, err error) {
 
 	keystr := page + scene + width
 	md5str := zyxstr.GetStrMD5(keystr)
@@ -44,7 +44,7 @@ func (oauth *MiniData) GetQrCode(code string, scene string, page string, width s
 	}
 
 	//获取token
-	res, tokenerr := oauth.GetToken(code)
+	res, tokenerr := oauth.GetToken()
 	if tokenerr != nil {
 		err = tokenerr
 	}

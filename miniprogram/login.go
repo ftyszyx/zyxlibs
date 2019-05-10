@@ -51,9 +51,9 @@ type ResAccessToken struct {
 }
 
 //获取accesstoken
-func (oauth *MiniData) GetToken(code string) (result ResAccessToken, err error) {
+func (oauth *MiniData) GetToken() (result ResAccessToken, err error) {
 
-	datatemp := oauth.Cache.Get(code)
+	datatemp := oauth.Cache.Get("accesstoken")
 	if datatemp != nil {
 		var ok = false
 		result, ok = datatemp.(ResAccessToken)
@@ -62,7 +62,7 @@ func (oauth *MiniData) GetToken(code string) (result ResAccessToken, err error) 
 		}
 	}
 
-	urlStr := fmt.Sprintf(gettoken_url, code, oauth.Appid, oauth.Secretkey)
+	urlStr := fmt.Sprintf(gettoken_url, "client_credential", oauth.Appid, oauth.Secretkey)
 	var response []byte
 	response, err = util.HTTPGet(urlStr)
 	if err != nil {
@@ -78,6 +78,6 @@ func (oauth *MiniData) GetToken(code string) (result ResAccessToken, err error) 
 		err = errors.Errorf("GetUserAccessToken error : errcode=%v , errmsg=%v", result.Errcode, result.Errmsg)
 		return
 	}
-	oauth.Cache.Put(code, result, time.Duration(result.Expires_in)*time.Second)
+	oauth.Cache.Put("accesstoken", result, time.Duration(result.Expires_in)*time.Second)
 	return
 }
