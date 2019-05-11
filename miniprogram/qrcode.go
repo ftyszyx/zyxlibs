@@ -95,34 +95,42 @@ func (oauth *MiniData) GetQrCode(scene string, page string, width int) (url stri
 	logs.Info("url:%s ", urlstr)
 
 	defer qrres.Body.Close()
+
 	var response []byte
 	response, err = ioutil.ReadAll(qrres.Body)
 	if err != nil {
 		err = errors.WithStack(err)
 		return
 	}
-	//logs.Info("response:%s ", string(response))
-	var getData map[string]interface{}
 
-	err = json.Unmarshal(response, &getData)
-	if err != nil {
-		err = errors.WithStack(err)
-		return
-	}
-	if getData["errcode"] != nil {
+	header := qrres.Header.Get("Content-Type")
+	if strings.HasPrefix(header, "application/json") {
+		//说明返回错误信息
+		var getData map[string]interface{}
+
+		err = json.Unmarshal(response, &getData)
+		if err != nil {
+			err = errors.WithStack(err)
+			return
+		}
 		err = errors.Errorf("GetUserAccessToken error : errcode=%v , errmsg=%v", getData["errcode"], getData["errmsg"])
 		return
+	} else {
+		if header == "image/jpeg" {
+			//写入临时文件
+			err = ioutil.WriteFile(filepath, response, 0755)
+			if err != nil {
+				err = errors.WithStack(err)
+				return
+			}
+
+			//上传七牛
+			_, err = qiniu.UploadFile(fileName, filepath, bucketname)
+			return
+		} else {
+			err = errors.New("unknown response header: " + header)
+			return
+		}
 	}
 
-	//写入临时文件
-	err = ioutil.WriteFile(filepath, response, 0755)
-	if err != nil {
-		err = errors.WithStack(err)
-		return
-	}
-
-	//上传七牛
-	_, err = qiniu.UploadFile(fileName, filepath, bucketname)
-
-	return
 }
