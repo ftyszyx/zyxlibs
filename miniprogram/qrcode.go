@@ -98,13 +98,15 @@ func (oauth *MiniData) GetQrCode(scene string, page string, width int) (url stri
 	var response []byte
 	response, err = ioutil.ReadAll(qrres.Body)
 	if err != nil {
+		err = errors.WithStack(err)
 		return
 	}
-	logs.Info("response:%s ", string(response))
+	//logs.Info("response:%s ", string(response))
 	var getData map[string]interface{}
 
 	err = json.Unmarshal(response, &getData)
 	if err != nil {
+		err = errors.WithStack(err)
 		return
 	}
 	if getData["errcode"] != nil {
