@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 
@@ -65,6 +66,7 @@ func (oauth *MiniData) GetQrCode(scene string, page string, width int) (url stri
 
 	if fileerr == nil {
 		//说明文件存在
+		logs.Info("old url:%s ", url)
 		return
 	}
 
@@ -75,7 +77,7 @@ func (oauth *MiniData) GetQrCode(scene string, page string, width int) (url stri
 	}
 
 	//请求码
-	urlstr := fmt.Sprintf(getqrcode_url, res.Access_token)
+	requrl := fmt.Sprintf(getqrcode_url, res.Access_token)
 
 	senddata := new(QRCoderReq)
 	senddata.Page = page
@@ -86,13 +88,13 @@ func (oauth *MiniData) GetQrCode(scene string, page string, width int) (url stri
 		err = jsonerr
 		return
 	}
-	qrres, qrerr := http.Post(urlstr, "application/json", strings.NewReader(string(reqbody)))
+	qrres, qrerr := http.Post(requrl, "application/json", strings.NewReader(string(reqbody)))
 	if qrerr != nil {
 		err = qrerr
 		return
 	}
 
-	logs.Info("url:%s ", urlstr)
+	logs.Info("url:%s ", requrl)
 
 	defer qrres.Body.Close()
 
@@ -126,6 +128,15 @@ func (oauth *MiniData) GetQrCode(scene string, page string, width int) (url stri
 
 			//上传七牛
 			_, err = qiniu.UploadFile(fileName, filepath, bucketname)
+			if err != nil {
+				err = errors.WithStack(err)
+				return
+			}
+			err = os.Remove(filepath)
+			if err != nil {
+				err = errors.WithStack(err)
+				return
+			}
 			return
 		} else {
 			err = errors.New("unknown response header: " + header)
