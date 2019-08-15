@@ -3,6 +3,7 @@ package kuaidiniao
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"net/url"
 
 	"github.com/ftyszyx/libs/beego/httplib"
@@ -33,10 +34,19 @@ type SendParam struct {
 	LogisticCode string `json:"LogisticCode"`
 }
 
+var LogisticsCodeArr = map[string]string{
+	"huitongkuaidi": "HTKY",
+	"ems":           "EMS",
+	"shunfeng":      "SF",
+	"tiantian":      "HHTT",
+	"yuantong":      "YTO",
+	"yunda":         "YD",
+	"zhongtong":     "ZTO"}
+
 func GetKuaiInfo(costomerid string, key string, company string, num string) (*KuaiResp, error) {
 	var param SendParam
 	param.OrderCode = ""
-	param.ShipperCode = company
+	param.ShipperCode = LogisticsCodeArr[company]
 	param.LogisticCode = num
 	parambuf, err := json.Marshal(param)
 	if err != nil {
@@ -44,6 +54,7 @@ func GetKuaiInfo(costomerid string, key string, company string, num string) (*Ku
 	}
 
 	var sigContent = string(parambuf) + key
+	logs.Info("sigContent:%s", sigContent)
 	signstr := url.QueryEscape(base64.StdEncoding.EncodeToString([]byte(zyxstr.GetStrMD5(sigContent))))
 
 	urlstr := "http://api.kdniao.com/Ebusiness/EbusinessOrderHandle.aspx"
@@ -55,14 +66,11 @@ func GetKuaiInfo(costomerid string, key string, company string, num string) (*Ku
 	sendata["DataType"] = "2"
 	sendata["DataSign"] = signstr
 
-	reqbuf, err := json.Marshal(sendata)
-	if err != nil {
-		return nil, errors.WithStack(err)
+	logs.Info("send data:%v", sendata)
+
+	for key, value := range sendata {
+		req.Param(key, fmt.Sprintf("%+v", value))
 	}
-
-	logs.Info("send data:%s", string(reqbuf))
-
-	req.Body(string(reqbuf))
 	req.Header("Content-Type", "application/x-www-form-urlencoded")
 
 	var respdata []byte
@@ -71,13 +79,12 @@ func GetKuaiInfo(costomerid string, key string, company string, num string) (*Ku
 		return nil, errors.WithStack(err)
 	}
 	getData := new(KuaiResp)
-	logs.Info("get data:%s", string(respdata))
+	//logs.Info("get data:%s", string(respdata))
 	err = json.Unmarshal(respdata, getData)
 	if err != nil {
 		logs.Info("parse data err")
 		return nil, errors.WithStack(err)
 	}
-	// logs.Info("get data:%v", getData)
 	if getData.Success == false {
 		return nil, errors.New(getData.Reason)
 	}
