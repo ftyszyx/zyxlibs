@@ -60,7 +60,8 @@ func Client_GetSendData(paramstr string, key string, costomerid string, cmd stri
 func Client_GetSign(paramstr string, key string) string {
 	var sigContent = paramstr + key
 	logs.Info("sigContent:%s", sigContent)
-	signstr := url.QueryEscape(base64.StdEncoding.EncodeToString([]byte(zyxstr.GetStrMD5(sigContent))))
+	//signstr := url.QueryEscape(base64.StdEncoding.EncodeToString([]byte(zyxstr.GetStrMD5(sigContent))))
+	signstr := base64.StdEncoding.EncodeToString([]byte(zyxstr.GetStrMD5(sigContent)))
 	return signstr
 }
 
