@@ -43,13 +43,10 @@ var LogisticsCodeArr = map[string]string{
 	"yunda":         "YD",
 	"zhongtong":     "ZTO"}
 
- 
-
 //获取要发送的结构
-func Client_GetSendData(paramstr string,key string,costomerid string,cmd string) map[string]interface{} {
-	var sigContent =paramstr+ key
-	logs.Info("sigContent:%s", sigContent)
-	signstr := url.QueryEscape(base64.StdEncoding.EncodeToString([]byte(zyxstr.GetStrMD5(sigContent))))
+func Client_GetSendData(paramstr string, key string, costomerid string, cmd string) map[string]interface{} {
+
+	signstr := Client_GetSign(paramstr, key)
 	sendata := make(map[string]interface{})
 	sendata["EBusinessID"] = costomerid
 	sendata["RequestType"] = cmd
@@ -60,16 +57,22 @@ func Client_GetSendData(paramstr string,key string,costomerid string,cmd string)
 	return sendata
 }
 
+func Client_GetSign(paramstr string, key string) string {
+	var sigContent = paramstr + key
+	logs.Info("sigContent:%s", sigContent)
+	signstr := url.QueryEscape(base64.StdEncoding.EncodeToString([]byte(zyxstr.GetStrMD5(sigContent))))
+	return signstr
+}
 
 //查询物流信息
-func Client_Query(costomerid string, key string, sendparam SendQueryParam)  (*KuaiResp, error) {
+func Client_Query(costomerid string, key string, sendparam SendQueryParam) (*KuaiResp, error) {
 	parambuf, err := json.Marshal(sendparam)
 	if err != nil {
 		return nil, errors.WithStack(err)
-	} 
+	}
 	urlstr := "http://api.kdniao.com/Ebusiness/EbusinessOrderHandle.aspx"
 	req := httplib.Post(urlstr)
-	sendata := Client_GetSendData(string(parambuf),key,costomerid,"1002")
+	sendata := Client_GetSendData(string(parambuf), key, costomerid, "1002")
 	for key, value := range sendata {
 		req.Param(key, fmt.Sprintf("%+v", value))
 	}
@@ -92,53 +95,50 @@ func Client_Query(costomerid string, key string, sendparam SendQueryParam)  (*Ku
 	return getData, nil
 }
 
-
-type Receiver struct{
-	Name string `json:"Name"`
-	Tel string `json:"Tel"`
-	Mobile string `json:"Mobile"`
+type Receiver struct {
+	Name         string `json:"Name"`
+	Tel          string `json:"Tel"`
+	Mobile       string `json:"Mobile"`
 	ProvinceName string `json:"ProvinceName"`
-	CityName string `json:"CityName"`
-	ExpAreaName string `json:"ExpAreaName"`
-	Address string `json:"Address"`
-
+	CityName     string `json:"CityName"`
+	ExpAreaName  string `json:"ExpAreaName"`
+	Address      string `json:"Address"`
 }
 
-
-type Sender struct{
-	Name string `json:"Name"`
-	Tel string `json:"Tel"`
-	Mobile string `json:"Mobile"`
+type Sender struct {
+	Name         string `json:"Name"`
+	Tel          string `json:"Tel"`
+	Mobile       string `json:"Mobile"`
 	ProvinceName string `json:"ProvinceName"`
-	CityName string `json:"CityName"`
-	ExpAreaName string `json:"ExpAreaName"`
-	Address string `json:"Address"`
+	CityName     string `json:"CityName"`
+	ExpAreaName  string `json:"ExpAreaName"`
+	Address      string `json:"Address"`
 }
 
 type Addlister_SendParam struct {
-	ShipperCode  string `json:"ShipperCode"`
-	LogisticCode string `json:"LogisticCode"`
-	Sender_info Sender  `json:"Sender"`
-	Receiver_info Receiver  `json:"Receiver"`
+	ShipperCode   string   `json:"ShipperCode"`
+	LogisticCode  string   `json:"LogisticCode"`
+	Sender_info   Sender   `json:"Sender"`
+	Receiver_info Receiver `json:"Receiver"`
 }
 
-type Listener_resp struct{
-	EBusinessID string 
-	UpdateTime string
-	Success bool
-	Reason string
+type Listener_resp struct {
+	EBusinessID string
+	UpdateTime  string
+	Success     bool
+	Reason      string
 }
 
 //订阅
-func Client_Addlistner(costomerid string, key string, sendparam Addlister_SendParam) (*Listener_resp,error){
-	
+func Client_Addlistner(costomerid string, key string, sendparam Addlister_SendParam) (*Listener_resp, error) {
+
 	parambuf, err := json.Marshal(sendparam)
 	if err != nil {
 		return nil, errors.WithStack(err)
-	} 
+	}
 	urlstr := "https://api.kdniao.com/api/dist"
 	req := httplib.Post(urlstr)
-	sendata := Client_GetSendData(string(parambuf),key,costomerid,"1008")
+	sendata := Client_GetSendData(string(parambuf), key, costomerid, "1008")
 	for key, value := range sendata {
 		req.Param(key, fmt.Sprintf("%+v", value))
 	}
@@ -160,5 +160,3 @@ func Client_Addlistner(costomerid string, key string, sendparam Addlister_SendPa
 	}
 	return getData, nil
 }
-
- 
