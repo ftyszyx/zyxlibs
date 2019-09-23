@@ -177,6 +177,7 @@ func Client_Addlistner(costomerid string, key string, sendparam Addlister_SendPa
 	urlstr := "https://api.kdniao.com/api/dist"
 	req := httplib.Post(urlstr)
 	sendata := Client_GetSendData(string(parambuf), key, costomerid, "1008")
+	logs.Info("sendata:%v", sendata)
 	for key, value := range sendata {
 		req.Param(key, fmt.Sprintf("%+v", value))
 	}
@@ -187,7 +188,7 @@ func Client_Addlistner(costomerid string, key string, sendparam Addlister_SendPa
 		return  errors.WithStack(err)
 	}
 	getData := new(Listener_resp)
-	//logs.Info("get data:%s", string(respdata))
+	logs.Info("get data:%s", string(respdata))
 	err = json.Unmarshal(respdata, getData)
 	if err != nil {
 		logs.Info("parse data err")
