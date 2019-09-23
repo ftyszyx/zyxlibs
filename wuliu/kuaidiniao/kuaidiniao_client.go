@@ -43,6 +43,43 @@ var LogisticsCodeArr = map[string]string{
 	"yunda":         "YD",
 	"zhongtong":     "ZTO"}
 
+var LogisticsCodeArr2 = map[string]string{
+	"HTKY":"huitongkuaidi",
+	"EMS":"ems",
+	"SF":"shunfeng",
+	"HHTT":"tiantian",
+	"YTO":"yuantong",
+	        "YD":"yunda",
+	    "ZTO":"zhongtong"}
+
+//push相关的结构
+type PushTrace struct {
+	AcceptTime    string
+	AcceptStation string
+	Remark        string
+}
+
+type PushDataInfo struct {
+	EBusinessID  string
+	ShipperCode  string
+	LogisticCode string
+	Success      bool
+	Traces       []PushTrace
+}
+
+type PushRequestData struct {
+	EBusinessID string
+	PushTime    string
+	Count       int
+	Data        []PushDataInfo
+}
+
+type PushRespData struct {
+	EBusinessID string
+	UpdateTime  string
+	Success     bool
+}
+
 //获取要发送的结构
 func Client_GetSendData(paramstr string, key string, costomerid string, cmd string) map[string]interface{} {
 
@@ -131,11 +168,11 @@ type Listener_resp struct {
 }
 
 //订阅
-func Client_Addlistner(costomerid string, key string, sendparam Addlister_SendParam) (*Listener_resp, error) {
+func Client_Addlistner(costomerid string, key string, sendparam Addlister_SendParam)  error{
 
 	parambuf, err := json.Marshal(sendparam)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return   errors.WithStack(err)
 	}
 	urlstr := "https://api.kdniao.com/api/dist"
 	req := httplib.Post(urlstr)
@@ -147,17 +184,17 @@ func Client_Addlistner(costomerid string, key string, sendparam Addlister_SendPa
 	var respdata []byte
 	respdata, err = req.Bytes()
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return  errors.WithStack(err)
 	}
 	getData := new(Listener_resp)
 	//logs.Info("get data:%s", string(respdata))
 	err = json.Unmarshal(respdata, getData)
 	if err != nil {
 		logs.Info("parse data err")
-		return nil, errors.WithStack(err)
+		return  errors.WithStack(err)
 	}
 	if getData.Success == false {
-		return nil, errors.New(getData.Reason)
+		return  errors.New(getData.Reason)
 	}
-	return getData, nil
+	return  nil
 }
