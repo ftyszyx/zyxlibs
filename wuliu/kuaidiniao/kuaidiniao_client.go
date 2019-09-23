@@ -177,7 +177,6 @@ func Client_Addlistner(costomerid string, key string, sendparam Addlister_SendPa
 		return errors.WithStack(err)
 	}
 	urlstr := "https://api.kdniao.com/api/dist"
-	//urlstr := "http://sandboxapi.kdniao.com:8080/kdniaosandbox/gateway/exterfaceInvoke.json"
 	req := httplib.Post(urlstr)
 	sendata := Client_GetSendData(string(parambuf), key, costomerid, "1008")
 	logs.Info("sendata:%v", sendata)

@@ -2,15 +2,14 @@ package kuaidiniao
 
 import (
 	"encoding/base64"
-	
+
 	"fmt"
 	"net/url"
- 
-	zyxstr "github.com/ftyszyx/libs/string" 
+
+	zyxstr "github.com/ftyszyx/libs/string"
 )
 
 //给快递鸟提供服务
-
 
 /*
 querytrace 路由信息查询
@@ -30,8 +29,7 @@ Cancleorder 订单取消
 createrealname 个人实名信息上传
 updaterealname 更新个人实名信息
 canclerealname 删除个人实名信息
-*/ 
-
+*/
 
 /*
 partnerid string R 合作商 ID
@@ -43,8 +41,6 @@ encrypt string R 报文(data)加密方式：url(utf-8),aes；
 默认 url(utf-8)
 version string R 版本号，默认 1.0
 */
-
-
 
 const g_encrypt_type = "url"
 const g_version = "1.0"
