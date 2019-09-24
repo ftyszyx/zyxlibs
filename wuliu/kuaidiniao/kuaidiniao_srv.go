@@ -2,10 +2,13 @@ package kuaidiniao
 
 import (
 	"encoding/base64"
-
+	"encoding/json"
 	"fmt"
 	"net/url"
-
+	"time"
+	"strconv"
+	"github.com/pkg/errors"
+	"github.com/ftyszyx/libs/beego/httplib"
 	zyxstr "github.com/ftyszyx/libs/string"
 )
 
@@ -53,7 +56,7 @@ const ERR_BADMETHOD = 405   //禁用的方法(不支持服务名)
 const ERR_SIGNERROR = 420   //签名验证失败
 const ERR_BADREQUEST2 = 420 //请求格式错误【参数名】
 
-func Getparam(costomerid string, method string, curtime string, sign string) string {
+func SrvGetparam(costomerid string, method string, curtime string, sign string) string {
 	//curtime := time.Now().Unix()
 	url := fmt.Sprintf("?partnerid=%s&timestamp=%s&method=%s&sign=%s&format=%s&encrypt=%s&version=%s",
 		costomerid, curtime, method, sign, g_format, g_encrypt_type, g_version)
@@ -61,9 +64,57 @@ func Getparam(costomerid string, method string, curtime string, sign string) str
 }
 
 //获取签名
-func GetSign(data string, method string, costomerid string, curtime string, key string) string {
+func SrvGetSign(data string, method string, costomerid string, curtime string, key string) string {
 	datastr := fmt.Sprintf("data=%sencrypt=%format=%smethod=%partnerid=%timestamp=%sversion=%s%s",
 		data, g_encrypt_type, g_format, method, costomerid, curtime, g_version, key)
 	signsstr := url.QueryEscape(base64.StdEncoding.EncodeToString([]byte(zyxstr.GetStrMD5(datastr))))
 	return signsstr
+}
+
+type Srv_PushData struct{
+	OrderCode string
+	WaybillCode string
+	ScanType string//PRIORA
+	ScanData string
+	TraceDesc string
+	CallBack string
+}
+
+type Srv_PushDataResp  struct{
+	PartnerId string
+	Success string
+	ResultCode string
+	Reason string
+}
+
+//发送推送
+func SrvPush(tracelist []Srv_PushData,costomerid string,key string)  error{
+	jsonstr, err := json.Marshal(tracelist)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	curtime := time.Now().Unix()
+	timestr:=strconv.FormatInt(curtime, 10)
+	signstr:=SrvGetSign(string(jsonstr),"pushtrace",costomerid,timestr,key)
+	paramstr:=SrvGetparam(costomerid,"pushtrace",timestr,signstr)
+	urlstr := "http://183.62.170.46:38093"+paramstr
+	req := httplib.Post(urlstr)  
+	req.Body(string(jsonstr))
+	req.Header("Content-Type", "application/x-www-form-urlencoded;charset=utf-8")
+	var respdata []byte
+	respdata, err = req.Bytes()
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	getData := new(Srv_PushDataResp)
+	//logs.Info("get data:%s", string(respdata))
+	err = json.Unmarshal(respdata, getData)
+	if err != nil { 
+		return errors.WithStack(err)
+	}
+	if getData.Success == "false" {
+		return errors.New(getData.Reason)
+	}
+	return nil
+
 }

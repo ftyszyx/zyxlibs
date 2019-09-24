@@ -41,6 +41,7 @@ var LogisticsCodeArr = map[string]string{
 	"tiantian":      "HHTT",
 	"yuantong":      "YTO",
 	"yunda":         "YD",
+	"STO":         "STO",
 	"zhongtong":     "ZTO"}
 
 var LogisticsCodeArr2 = map[string]string{
@@ -49,6 +50,7 @@ var LogisticsCodeArr2 = map[string]string{
 	"SF":   "shunfeng",
 	"HHTT": "tiantian",
 	"YTO":  "yuantong",
+	"STO":         "STO",
 	"YD":   "yunda",
 	"ZTO":  "zhongtong"}
 
