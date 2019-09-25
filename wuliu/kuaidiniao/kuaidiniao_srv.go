@@ -4,8 +4,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/ftyszyx/libs/beego/httplib"
@@ -70,7 +70,9 @@ func SrvGetSign(data string, method string, costomerid string, curtime string, k
 	datastr := fmt.Sprintf("data=%sencrypt=%sformat=%smethod=%spartnerid=%stimestamp=%sversion=%s%s",
 		data, g_encrypt_type, g_format, method, costomerid, curtime, g_version, key)
 	logs.Info("datastr:%s", datastr)
-	signsstr := url.QueryEscape(base64.StdEncoding.EncodeToString([]byte(zyxstr.GetStrMD5(datastr))))
+
+	//signsstr := url.QueryEscape(base64.StdEncoding.EncodeToString([]byte(zyxstr.GetStrMD5(datastr))))
+	signsstr := strings.ToLower(base64.StdEncoding.EncodeToString([]byte(zyxstr.GetStrMD5(datastr))))
 	return signsstr
 }
 
