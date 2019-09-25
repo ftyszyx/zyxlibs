@@ -67,7 +67,7 @@ func SrvGetparam(costomerid string, method string, curtime string, sign string) 
 
 //获取签名
 func SrvGetSign(data string, method string, costomerid string, curtime string, key string) string {
-	datastr := fmt.Sprintf("data=%sencrypt=%format=%smethod=%partnerid=%timestamp=%sversion=%s%s",
+	datastr := fmt.Sprintf("data=%sencrypt=%sformat=%smethod=%spartnerid=%stimestamp=%sversion=%s%s",
 		data, g_encrypt_type, g_format, method, costomerid, curtime, g_version, key)
 	logs.Info("datastr:%s", datastr)
 	signsstr := url.QueryEscape(base64.StdEncoding.EncodeToString([]byte(zyxstr.GetStrMD5(datastr))))
