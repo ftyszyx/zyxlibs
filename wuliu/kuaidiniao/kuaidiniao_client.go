@@ -34,6 +34,7 @@ type SendQueryParam struct {
 	LogisticCode string `json:"LogisticCode"`
 }
 
+/*
 var LogisticsCodeArr = map[string]string{
 	"huitongkuaidi": "HTKY",
 	"ems":           "EMS",
@@ -53,6 +54,7 @@ var LogisticsCodeArr2 = map[string]string{
 	"STO":  "STO",
 	"YD":   "yunda",
 	"ZTO":  "zhongtong"}
+*/
 
 //push相关的结构
 type PushTrace struct {
