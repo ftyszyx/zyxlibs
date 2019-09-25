@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
-	"time"
 	"strconv"
-	"github.com/pkg/errors"
+	"time"
+
 	"github.com/ftyszyx/libs/beego/httplib"
+	"github.com/ftyszyx/libs/beego/logs"
 	zyxstr "github.com/ftyszyx/libs/string"
+	"github.com/pkg/errors"
 )
 
 //给快递鸟提供服务
@@ -67,38 +69,39 @@ func SrvGetparam(costomerid string, method string, curtime string, sign string) 
 func SrvGetSign(data string, method string, costomerid string, curtime string, key string) string {
 	datastr := fmt.Sprintf("data=%sencrypt=%format=%smethod=%partnerid=%timestamp=%sversion=%s%s",
 		data, g_encrypt_type, g_format, method, costomerid, curtime, g_version, key)
+	logs.Info("datastr:%s", datastr)
 	signsstr := url.QueryEscape(base64.StdEncoding.EncodeToString([]byte(zyxstr.GetStrMD5(datastr))))
 	return signsstr
 }
 
-type Srv_PushData struct{
-	OrderCode string
+type Srv_PushData struct {
+	OrderCode   string
 	WaybillCode string
-	ScanType string//PRIORA
-	ScanData string
-	TraceDesc string
-	CallBack string
+	ScanType    string //PRIORA
+	ScanData    string
+	TraceDesc   string
+	CallBack    string
 }
 
-type Srv_PushDataResp  struct{
-	PartnerId string
-	Success string
+type Srv_PushDataResp struct {
+	PartnerId  string
+	Success    string
 	ResultCode string
-	Reason string
+	Reason     string
 }
 
 //发送推送
-func SrvPush(tracelist []Srv_PushData,costomerid string,key string)  error{
+func SrvPush(tracelist []Srv_PushData, costomerid string, key string) error {
 	jsonstr, err := json.Marshal(tracelist)
 	if err != nil {
 		return errors.WithStack(err)
 	}
 	curtime := time.Now().Unix()
-	timestr:=strconv.FormatInt(curtime, 10)
-	signstr:=SrvGetSign(string(jsonstr),"pushtrace",costomerid,timestr,key)
-	paramstr:=SrvGetparam(costomerid,"pushtrace",timestr,signstr)
-	urlstr := "http://183.62.170.46:38093"+paramstr
-	req := httplib.Post(urlstr)  
+	timestr := strconv.FormatInt(curtime, 10)
+	signstr := SrvGetSign(string(jsonstr), "pushtrace", costomerid, timestr, key)
+	paramstr := SrvGetparam(costomerid, "pushtrace", timestr, signstr)
+	urlstr := "http://183.62.170.46:38093" + paramstr
+	req := httplib.Post(urlstr)
 	req.Body(string(jsonstr))
 	req.Header("Content-Type", "application/x-www-form-urlencoded;charset=utf-8")
 	var respdata []byte
@@ -109,7 +112,7 @@ func SrvPush(tracelist []Srv_PushData,costomerid string,key string)  error{
 	getData := new(Srv_PushDataResp)
 	//logs.Info("get data:%s", string(respdata))
 	err = json.Unmarshal(respdata, getData)
-	if err != nil { 
+	if err != nil {
 		return errors.WithStack(err)
 	}
 	if getData.Success == "false" {
