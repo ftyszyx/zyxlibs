@@ -1,11 +1,9 @@
 package kuaidiniao
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/ftyszyx/libs/beego/httplib"
@@ -72,7 +70,7 @@ func SrvGetSign(data string, method string, costomerid string, curtime string, k
 	logs.Info("datastr:%s", datastr)
 
 	//signsstr := url.QueryEscape(base64.StdEncoding.EncodeToString([]byte(zyxstr.GetStrMD5(datastr))))
-	signsstr := strings.ToLower(base64.StdEncoding.EncodeToString([]byte(zyxstr.GetStrMD5(datastr))))
+	signsstr := zyxstr.KDNGetByteMD5([]byte(datastr))
 	return signsstr
 }
 
