@@ -110,7 +110,7 @@ func SrvPush(tracelist []Srv_PushData, costomerid string, key string) error {
 		return errors.WithStack(err)
 	}
 	getData := new(Srv_PushDataResp)
-	//logs.Info("get data:%s", string(respdata))
+	logs.Info("get data:%s", string(respdata))
 	err = json.Unmarshal(respdata, getData)
 	if err != nil {
 		return errors.WithStack(err)
