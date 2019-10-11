@@ -78,7 +78,7 @@ type Srv_PushData struct {
 	OrderCode   string
 	WaybillCode string
 	ScanType    string //PRIORA
-	ScanData    string
+	ScanDate    string
 	TraceDesc   string
 	CallBack    string
 }
