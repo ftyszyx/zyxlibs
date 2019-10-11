@@ -100,7 +100,7 @@ func SrvPush(tracelist []Srv_PushData, costomerid string, key string) error {
 	timestr := strconv.FormatInt(curtime, 10)
 	signstr := SrvGetSign(string(jsonstr), "pushtrace", costomerid, timestr, key)
 	paramstr := SrvGetparam(costomerid, "pushtrace", timestr, signstr)
-	urlstr := "http://183.62.170.46:38093" + paramstr
+	urlstr := "http://connector.kdniao.com/api/receiver/klop" + paramstr
 	req := httplib.Post(urlstr)
 	req.Body(string(jsonstr))
 	req.Header("Content-Type", "application/x-www-form-urlencoded;charset=utf-8")
