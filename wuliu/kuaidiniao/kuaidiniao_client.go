@@ -127,7 +127,7 @@ func Client_Query(costomerid string, key string, sendparam SendQueryParam) (*Kua
 		return nil, errors.WithStack(err)
 	}
 	getData := new(KuaiResp)
-	//logs.Info("get data:%s", string(respdata))
+	logs.Info("get data:%s", string(respdata))
 	err = json.Unmarshal(respdata, getData)
 	if err != nil {
 		logs.Info("parse data err")
