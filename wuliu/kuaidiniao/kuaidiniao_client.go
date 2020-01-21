@@ -25,6 +25,7 @@ type KuaiResp struct {
 	Success      bool
 	Reason       string
 	State        string
+	StateEx		string
 	Traces       []KuaiData
 }
 
@@ -116,7 +117,7 @@ func Client_Query(costomerid string, key string, sendparam SendQueryParam) (*Kua
 	}
 	urlstr := "http://api.kdniao.com/Ebusiness/EbusinessOrderHandle.aspx"
 	req := httplib.Post(urlstr)
-	sendata := Client_GetSendData(string(parambuf), key, costomerid, "1002")
+	sendata := Client_GetSendData(string(parambuf), key, costomerid, "8001")
 	for key, value := range sendata {
 		req.Param(key, fmt.Sprintf("%+v", value))
 	}
