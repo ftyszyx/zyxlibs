@@ -21,12 +21,21 @@ import (
 )
 
 var alphaNum = []byte(`0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz`)
-
+var numarr = []byte(`0123456789`)
 // RandomCreateBytes generate random []byte by specify chars.
 func RandomCreateBytes(n int, alphabets ...byte) []byte {
 	if len(alphabets) == 0 {
 		alphabets = alphaNum
 	}
+	return  RandomCreateBytes2(n,alphabets)
+}
+
+func RandomCreateNumBytes(n int) []byte{
+	return  RandomCreateBytes2(n,numarr)
+}
+
+
+func RandomCreateBytes2(n int, alphabets []byte) []byte {
 	var bytes = make([]byte, n)
 	var randBy bool
 	if num, err := rand.Read(bytes); num != n || err != nil {
