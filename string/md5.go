@@ -3,7 +3,9 @@ package string
 import (
 	"crypto/md5"
 	"encoding/base64"
+	"crypto/rand"
 	"fmt"
+	"time"
 	"io"
 	"os"
 	"strings"
@@ -32,12 +34,13 @@ func GetByteMD5(src []byte) string {
 }
 
 func UniqueId() string {
-	b := make([]byte, 48)
-
-	if _, err := io.ReadFull(rand.Reader, b); err != nil {
-		return ""
+	unix32bits := uint32(time.Now().UTC().Unix())
+	buff := make([]byte, 12)
+	_, err := rand.Read(buff)
+	if  err != nil {
+		panic(err)
 	}
-	return GetStrMD5(base64.URLEncoding.EncodeToString(b))
+	return  fmt.Sprintf("%d-%s",unix32bits,base64.URLEncoding.EncodeToString(buff))
 }
 
 
