@@ -3,9 +3,8 @@ package string
 import (
 	"bytes"
 	"crypto/aes"
-	"crypto/cipher"
+	"crypto/cipher" 
 
-	"github.com/pkg/errors"
 )
 
 func PKCS7Padding(ciphertext []byte, blockSize int) []byte {
@@ -27,7 +26,7 @@ func AesEncrypt(origData, key []byte) ([]byte, error) {
 	//logs.Info("key:%s %v %d", string(key), key, len(key))
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, err
 	}
 	blockSize := block.BlockSize()
 	origData = PKCS7Padding(origData, blockSize)
@@ -43,7 +42,7 @@ func AesEncrypt(origData, key []byte) ([]byte, error) {
 func AesDecrypt(crypted, key []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, err
 	}
 	blockSize := block.BlockSize()
 	blockMode := cipher.NewCBCDecrypter(block, key[:blockSize])

@@ -13,29 +13,29 @@ curpath=os.getcwd();#当前文件目录
 
 def commit(path):
     os.chdir( path )
-    print"\n"
-    print "begin commit "+path
-    print "git add!"
+    print("\n")
+    print( "begin commit "+path)
+    print( "git add!")
     ret = os.system( "git add -A" )
     if ret != 0:
-        print "git add Error!"
+        print( "git add Error!")
         return
-    print "git commit!"
+    print( "git commit!")
     cmd = "git commit -m\" %s\"" % ("zyx")
     ret = os.system( cmd)
     if ret != 0:
-        print "git commit Error!"
+        print( "git commit Error!")
         return
-    print "git push!"
+    print( "git push!")
     ret = os.system( "git push" )
     if ret != 0:
-        print "git push Error!"
+        print( "git push Error!")
         return
-    print"\n"
+    print("\n")
     os.chdir( curpath )
 
 
 if __name__=="__main__":
    commit(curpath)
-   print "all done!"
+   print( "all done!")
    raw_input()

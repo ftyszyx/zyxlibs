@@ -12,21 +12,21 @@ import platform
 curpath=os.getcwd();#当前文件目录
 
 def update(path):
-    print"\n"
-    print "begin update "+path
+    print("\n")
+    print("begin update "+path)
     os.chdir( path )
     ret = os.system( "git pull" )
     if ret != 0:
-        print "build "+path+" Error!"
+        print( "build "+path+" Error!")
         return
     
-    print "update "+path+" success!"
-    print"\n"
+    print( "update "+path+" success!")
+    print("\n")
     os.chdir( curpath )
 
 
 if __name__=="__main__":
    update(curpath)
-   print "all done!"
+   print( "all done!")
    raw_input()
    

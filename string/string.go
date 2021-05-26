@@ -8,15 +8,54 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/pkg/errors"
-
+	"errors"
+//"github.com/ftyszyx/libs/beego"
 	"github.com/axgle/mahonia"
-	"github.com/ftyszyx/libs/beego"
-	"github.com/ftyszyx/libs/beego/logs"
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/transform"
 )
+
+
+// DateFormat pattern rules.
+var datePatterns = []string{
+	// year
+	"Y", "2006", // A full numeric representation of a year, 4 digits   Examples: 1999 or 2003
+	"y", "06", //A two digit representation of a year   Examples: 99 or 03
+
+	// month
+	"m", "01", // Numeric representation of a month, with leading zeros 01 through 12
+	"n", "1", // Numeric representation of a month, without leading zeros   1 through 12
+	"M", "Jan", // A short textual representation of a month, three letters Jan through Dec
+	"F", "January", // A full textual representation of a month, such as January or March   January through December
+
+	// day
+	"d", "02", // Day of the month, 2 digits with leading zeros 01 to 31
+	"j", "2", // Day of the month without leading zeros 1 to 31
+
+	// week
+	"D", "Mon", // A textual representation of a day, three letters Mon through Sun
+	"l", "Monday", // A full textual representation of the day of the week  Sunday through Saturday
+
+	// time
+	"g", "3", // 12-hour format of an hour without leading zeros    1 through 12
+	"G", "15", // 24-hour format of an hour without leading zeros   0 through 23
+	"h", "03", // 12-hour format of an hour with leading zeros  01 through 12
+	"H", "15", // 24-hour format of an hour with leading zeros  00 through 23
+
+	"a", "pm", // Lowercase Ante meridiem and Post meridiem am or pm
+	"A", "PM", // Uppercase Ante meridiem and Post meridiem AM or PM
+
+	"i", "04", // Minutes with leading zeros    00 to 59
+	"s", "05", // Seconds, with leading zeros   00 through 59
+
+	// time zone
+	"T", "MST",
+	"P", "-07:00",
+	"O", "-0700",
+
+	// RFC 2822
+	"r", time.RFC1123Z,
+}
 
 func CheckPhone(phone string) bool {
 	reg := `^1([38][0-9]|14[57]|5[^4])\d{8}$`
@@ -34,12 +73,6 @@ func GbkToUtf8(src []byte) ([]byte, error) {
 }
 
 func UTF82GBK(src string) (string, error) {
-	// reader := transform.NewReader(strings.NewReader(src), simplifiedchinese.GBK.NewEncoder())
-	// if buf, err := ioutil.ReadAll(reader); err != nil {
-	// 	return "", err
-	// } else {
-	// 	return string(buf), nil
-	// }
 	enc := mahonia.NewEncoder("gbk")
 	//converts a  string from UTF-8 to gbk encoding.
 	return enc.ConvertString(src), nil
@@ -53,21 +86,22 @@ func GetStrArr(src []interface{}) []string {
 	return strarr
 }
 
-func FormatTableTime(stamp string) (datestring string) {
+func FormatTableTime(stamp string) (datestring string,err error) {
 	if stamp == "" || stamp == "0" {
-		return ""
+		return "",nil
 	}
 	return FormatTime(stamp, "Y-m-d H:i:s")
 }
 
-func FormatTime(stamp string, format string) (datestring string) {
+func FormatTime(stamp string, format string) (datestring string,err error) {
 	timeint, err := strconv.ParseInt(stamp, 10, 64)
 	if err != nil {
-		logs.Error("err:%s", err.Error())
 		return
 	}
 	timeinfo := time.Unix(timeint, 0)
-	datestring = beego.Date(timeinfo, format)
+	replacer := strings.NewReplacer(datePatterns...)
+	format = replacer.Replace(format)
+	datestring= timeinfo.Format(format)
 	return
 }
 
@@ -99,11 +133,10 @@ func addZero(timestring string) string {
 func ParseTime(timestr string) (error, time.Time) {
 	re, err := regexp.Compile(`\s+`)
 	if err != nil {
-		return errors.WithStack(err), time.Time{}
+		return err, time.Time{}
 	}
 	areaarr := re.Split(timestr, 2)
 	if len(areaarr) != 2 {
-		// logs.Info("areaarr:%+v", areaarr)
 		return errors.New("fomart err"), time.Time{}
 	}
 	datearr := strings.Split(areaarr[0], "/")
@@ -125,9 +158,12 @@ func ParseTime(timestr string) (error, time.Time) {
 	timearr[1] = addZero(timearr[1])
 	timearr[2] = addZero(timearr[2])
 	newstr := strings.Join(datearr, "/") + " " + strings.Join(timearr, ":")
-	starttime, err := beego.DateParse(newstr, "Y/m/d H:i:s")
+	//starttime, err := beego.DateParse(newstr, "Y/m/d H:i:s")
+	replacer := strings.NewReplacer(datePatterns...)
+	format := replacer.Replace("Y/m/d H:i:s")
+	starttime, err :=time.ParseInLocation(format, newstr, time.Local)
 	if err != nil {
-		return errors.WithStack(err), time.Time{}
+		return err, time.Time{}
 	}
 
 	return nil, starttime

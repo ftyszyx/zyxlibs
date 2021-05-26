@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/ftyszyx/libs/beego/logs"
-
 	"github.com/pkg/errors"
 )
 
@@ -45,8 +43,7 @@ func ParseToken(tokenstr string, key string) (*TokenData, error) {
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	origData, err := AesDecrypt(aesstr, []byte(key))
-	logs.Info("origin:%s", string(origData))
+	origData, err := AesDecrypt(aesstr, []byte(key)) 
 	if err != nil {
 		return nil, err
 	}
