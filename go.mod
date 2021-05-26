@@ -1,4 +1,4 @@
-module github.com/xxjwxc/public
+module github.com/ftyszyx/zyxlibs
 
 go 1.14
 
